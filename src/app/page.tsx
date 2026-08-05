@@ -804,17 +804,15 @@ function MoldRow({
                         }}
                       />
                     </DetailField>
-                    {mold.oee < 0.9 && (
-                      <DetailField label={t.oeeLowReason}>
-                        <textarea
-                          value={lang === 'en' ? (mold.oeeReasonEn || mold.oeeReason || '') : (mold.oeeReason || '')}
-                          onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'oeeReasonEn' : 'oeeReason', e.target.value)}
-                          placeholder={t.oeeLowPlaceholder}
-                          className="detail-input min-h-[60px] resize-none"
-                          style={{ borderColor: '#e74c3c' }}
-                        />
-                      </DetailField>
-                    )}
+                    <DetailField label={t.oeeLowReason}>
+                      <textarea
+                        value={lang === 'en' ? (mold.oeeReasonEn || mold.oeeReason || '') : (mold.oeeReason || '')}
+                        onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'oeeReasonEn' : 'oeeReason', e.target.value)}
+                        placeholder={t.oeeLowPlaceholder}
+                        className="detail-input min-h-[60px] resize-none"
+                        style={{ borderColor: mold.oee < 0.9 ? '#e74c3c' : '#e0e8dc' }}
+                      />
+                    </DetailField>
                     <div className="grid grid-cols-3 gap-3">
                       <DetailField label={t.quantity}>
                         <input
@@ -855,17 +853,15 @@ function MoldRow({
                         }}
                       />
                     </DetailField>
-                    {mold.lossCoefficient !== 0.05 && (
-                      <DetailField label={t.modifyReason}>
-                        <textarea
-                          value={lang === 'en' ? (mold.lossReasonEn || mold.lossReason || '') : (mold.lossReason || '')}
-                          onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'lossReasonEn' : 'lossReason', e.target.value)}
-                          placeholder={t.lossPlaceholder}
-                          className="detail-input min-h-[60px] resize-none"
-                          style={{ borderColor: '#f39c12' }}
-                        />
-                      </DetailField>
-                    )}
+                    <DetailField label={t.modifyReason}>
+                      <textarea
+                        value={lang === 'en' ? (mold.lossReasonEn || mold.lossReason || '') : (mold.lossReason || '')}
+                        onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'lossReasonEn' : 'lossReason', e.target.value)}
+                        placeholder={t.lossPlaceholder}
+                        className="detail-input min-h-[60px] resize-none"
+                        style={{ borderColor: mold.lossCoefficient !== 0.05 ? '#f39c12' : '#e0e8dc' }}
+                      />
+                    </DetailField>
                     <div className="grid grid-cols-2 gap-3">
                       <DetailField label={t.material}>
                         <input
@@ -1157,17 +1153,15 @@ function AddMoldModal({
                     }}
                   />
                 </DetailField>
-                {(newMold.oee ?? 0.9) < 0.9 && (
-                  <DetailField label={t.oeeLowReason}>
-                    <textarea
-                      value={lang === 'en' ? (newMold.oeeReasonEn || '') : (newMold.oeeReason || '')}
-                      onChange={(e) => onUpdate(lang === 'en' ? 'oeeReasonEn' : 'oeeReason', e.target.value)}
-                      placeholder={t.oeeLowPlaceholder}
-                      className="detail-input min-h-[60px] resize-none"
-                      style={{ borderColor: '#e74c3c' }}
-                    />
-                  </DetailField>
-                )}
+                <DetailField label={t.oeeLowReason}>
+                  <textarea
+                    value={lang === 'en' ? (newMold.oeeReasonEn || '') : (newMold.oeeReason || '')}
+                    onChange={(e) => onUpdate(lang === 'en' ? 'oeeReasonEn' : 'oeeReason', e.target.value)}
+                    placeholder={t.oeeLowPlaceholder}
+                    className="detail-input min-h-[60px] resize-none"
+                    style={{ borderColor: (newMold.oee ?? 0.9) < 0.9 ? '#e74c3c' : '#e0e8dc' }}
+                  />
+                </DetailField>
                 <div className="grid grid-cols-3 gap-3">
                   <DetailField label={t.quantity}>
                     <input
@@ -1208,17 +1202,15 @@ function AddMoldModal({
                     }}
                   />
                 </DetailField>
-                {(newMold.lossCoefficient ?? 0.05) !== 0.05 && (
-                  <DetailField label={t.modifyReason}>
-                    <textarea
-                      value={lang === 'en' ? (newMold.lossReasonEn || '') : (newMold.lossReason || '')}
-                      onChange={(e) => onUpdate(lang === 'en' ? 'lossReasonEn' : 'lossReason', e.target.value)}
-                      placeholder={t.lossPlaceholder}
-                      className="detail-input min-h-[60px] resize-none"
-                      style={{ borderColor: '#f39c12' }}
-                    />
-                  </DetailField>
-                )}
+                <DetailField label={t.modifyReason}>
+                  <textarea
+                    value={lang === 'en' ? (newMold.lossReasonEn || '') : (newMold.lossReason || '')}
+                    onChange={(e) => onUpdate(lang === 'en' ? 'lossReasonEn' : 'lossReason', e.target.value)}
+                    placeholder={t.lossPlaceholder}
+                    className="detail-input min-h-[60px] resize-none"
+                    style={{ borderColor: (newMold.lossCoefficient ?? 0.05) !== 0.05 ? '#f39c12' : '#e0e8dc' }}
+                  />
+                </DetailField>
                 <div className="grid grid-cols-2 gap-3">
                   <DetailField label={t.material}>
                     <input
