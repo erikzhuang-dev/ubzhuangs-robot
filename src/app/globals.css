@@ -135,3 +135,24 @@
 body {
   @apply font-sans;
 }
+
+/* Detail input styles */
+.detail-input {
+  width: 100%;
+  border: 1px solid #e0e8dc;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #2d3b2d;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.detail-input:focus {
+  border-color: #4a7c59;
+}
+
+.detail-input:hover {
+  border-color: #a8d5a2;
+}
