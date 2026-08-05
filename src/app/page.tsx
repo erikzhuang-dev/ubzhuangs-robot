@@ -72,6 +72,13 @@ const T = {
     valveHotRunner: '针阀式热流道',
     // Excel sheet name
     sheetName: '模具列表',
+    // Analysis
+    analysis: '分析',
+    analysisTitle: '模具数据分析',
+    moldByProduct: '各产品模具数量分布',
+    moldByFactory: '各工厂模具数量分布',
+    moldByStatus: '模具状态分布',
+    moldByBU: '各BU模具数量分布',
   },
   en: {
     title: 'Mold List',
@@ -130,6 +137,12 @@ const T = {
     semiHotRunner: 'Semi-Hot Runner',
     valveHotRunner: 'Valve Hot Runner',
     sheetName: 'Mold List',
+    analysis: 'Analysis',
+    analysisTitle: 'Mold Data Analysis',
+    moldByProduct: 'Molds by Product',
+    moldByFactory: 'Molds by Factory',
+    moldByStatus: 'Molds by Status',
+    moldByBU: 'Molds by BU',
   },
 } as const;
 
@@ -156,6 +169,7 @@ export default function Home() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>('en');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [newMold, setNewMold] = useState<Partial<Mold>>({
     name: '',
     nameEn: '',
@@ -519,6 +533,28 @@ export default function Home() {
               </svg>
               {t.exportExcel}
             </button>
+            {/* Analysis button */}
+            <button
+              onClick={() => setShowAnalysisModal(true)}
+              className="flex h-9 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              {t.analysis}
+            </button>
             {/* Language toggle */}
             <button
               onClick={() => setLang((prev) => (prev === 'zh' ? 'en' : 'zh'))}
@@ -599,6 +635,238 @@ export default function Home() {
             lang={lang}
           />
         )}
+
+        {/* Analysis Modal */}
+        {showAnalysisModal && (
+          <AnalysisModal
+            molds={molds}
+            onClose={() => setShowAnalysisModal(false)}
+            lang={lang}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Analysis Modal Component
+function AnalysisModal({
+  molds,
+  onClose,
+  lang,
+}: {
+  molds: Mold[];
+  onClose: () => void;
+  lang: Lang;
+}) {
+  const t = T[lang];
+
+  // Calculate statistics
+  const productStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    molds.forEach((m) => {
+      const name = lang === 'en' ? (m.productNameEn || m.productName || m.name) : (m.productName || m.name);
+      stats[name] = (stats[name] || 0) + 1;
+    });
+    return Object.entries(stats)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [molds, lang]);
+
+  const factoryStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    molds.forEach((m) => {
+      stats[m.factory] = (stats[m.factory] || 0) + 1;
+    });
+    return Object.entries(stats)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [molds]);
+
+  const statusStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    molds.forEach((m) => {
+      const label = T[lang][m.status] || m.status;
+      stats[label] = (stats[label] || 0) + 1;
+    });
+    return Object.entries(stats).map(([name, count]) => ({ name, count }));
+  }, [molds, lang]);
+
+  const buStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    molds.forEach((m) => {
+      const bu = BUS.find((b) => b.id === m.buId);
+      const name = bu ? bu.name.split('-').slice(1).join('-') : m.buId;
+      stats[name] = (stats[name] || 0) + 1;
+    });
+    return Object.entries(stats).map(([name, count]) => ({ name, count }));
+  }, [molds]);
+
+  const COLORS = ['#4a7c59', '#f39c12', '#e74c3c', '#3498db', '#9b59b6', '#1abc9c', '#e67e22', '#95a5a6'];
+
+  const maxProductCount = Math.max(...productStats.map((s) => s.count), 1);
+  const maxFactoryCount = Math.max(...factoryStats.map((s) => s.count), 1);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+      <div
+        className="relative mx-4 flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white"
+        style={{ boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)' }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
+          <h2 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
+            {t.analysisTitle}
+          </h2>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-gray-100"
+            style={{ color: '#6b7c6b' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Product Distribution */}
+            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.moldByProduct}
+              </h3>
+              <div className="space-y-2.5">
+                {productStats.map((stat, idx) => (
+                  <div key={stat.name} className="flex items-center gap-3">
+                    <div className="w-24 truncate text-xs" style={{ color: '#6b7c6b' }} title={stat.name}>
+                      {stat.name}
+                    </div>
+                    <div className="flex-1">
+                      <div className="h-5 overflow-hidden rounded-full" style={{ backgroundColor: '#f0f7ec' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${(stat.count / maxProductCount) * 100}%`,
+                            backgroundColor: COLORS[idx % COLORS.length],
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-8 text-right text-xs font-medium" style={{ color: '#2d3b2d' }}>
+                      {stat.count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Factory Distribution */}
+            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.moldByFactory}
+              </h3>
+              <div className="space-y-2.5">
+                {factoryStats.map((stat, idx) => (
+                  <div key={stat.name} className="flex items-center gap-3">
+                    <div className="w-24 text-xs font-medium" style={{ color: '#6b7c6b' }}>
+                      {stat.name}
+                    </div>
+                    <div className="flex-1">
+                      <div className="h-5 overflow-hidden rounded-full" style={{ backgroundColor: '#f0f7ec' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${(stat.count / maxFactoryCount) * 100}%`,
+                            backgroundColor: COLORS[idx % COLORS.length],
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-8 text-right text-xs font-medium" style={{ color: '#2d3b2d' }}>
+                      {stat.count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Distribution - Donut Chart */}
+            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.moldByStatus}
+              </h3>
+              <div className="flex items-center gap-6">
+                <DonutChart
+                  segments={statusStats.map((stat, idx) => ({
+                    value: stat.count,
+                    color: COLORS[idx % COLORS.length],
+                  }))}
+                />
+                <div className="space-y-2">
+                  {statusStats.map((stat, idx) => (
+                    <div key={stat.name} className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                      />
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>
+                        {stat.name}
+                      </span>
+                      <span className="text-xs font-medium" style={{ color: '#2d3b2d' }}>
+                        {stat.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* BU Distribution - Donut Chart */}
+            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.moldByBU}
+              </h3>
+              <div className="flex items-center gap-6">
+                <DonutChart
+                  segments={buStats.map((stat, idx) => ({
+                    value: stat.count,
+                    color: COLORS[idx % COLORS.length],
+                  }))}
+                />
+                <div className="space-y-2">
+                  {buStats.map((stat, idx) => (
+                    <div key={stat.name} className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                      />
+                      <span className="text-xs" style={{ color: '#6b7c6b' }} title={stat.name}>
+                        {stat.name.length > 20 ? stat.name.slice(0, 20) + '...' : stat.name}
+                      </span>
+                      <span className="text-xs font-medium" style={{ color: '#2d3b2d' }}>
+                        {stat.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end border-t px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
+          <button
+            onClick={onClose}
+            className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            {lang === 'zh' ? '关闭' : 'Close'}
+          </button>
+        </div>
       </div>
     </div>
   );
