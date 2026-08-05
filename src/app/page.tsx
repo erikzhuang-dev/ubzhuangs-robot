@@ -326,10 +326,10 @@ export default function Home() {
       const num = parseInt(m.code.replace('M', '').replace('-', ''), 10);
       return num > max ? num : max;
     }, 0);
-    const newCode = `M${String(maxCode + 1).padStart(4, '0')}`;
+    const autoCode = `M${String(maxCode + 1).padStart(4, '0')}`;
     const mold: Mold = {
       id: `mold-${Date.now()}`,
-      code: newCode,
+      code: newMold.code || autoCode,
       projectNumber: newMold.projectNumber || '',
       name: newMold.name || '',
       nameEn: newMold.nameEn || '',
