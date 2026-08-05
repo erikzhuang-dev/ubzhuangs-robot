@@ -146,7 +146,7 @@ export default function Home() {
   const [factoryFilter, setFactoryFilter] = useState<string>('');
   const [buFilter, setBuFilter] = useState<string>('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [lang, setLang] = useState<Lang>('zh');
+  const [lang, setLang] = useState<Lang>('en');
 
   const t = T[lang];
 
