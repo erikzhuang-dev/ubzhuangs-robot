@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BUS, FACTORIES, PRODUCTS, INITIAL_MOLDS } from '@/lib/mock-data';
 import type { Mold } from '@/lib/types';
 import * as XLSX from 'xlsx';
@@ -165,7 +165,20 @@ const RUNNER_MAP: Record<string, { zh: string; en: string }> = {
 };
 
 export default function Home() {
-  const [molds, setMolds] = useState<Mold[]>(INITIAL_MOLDS);
+  // Initialize molds from localStorage or fallback to INITIAL_MOLDS
+  const [molds, setMolds] = useState<Mold[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('molds');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return INITIAL_MOLDS;
+        }
+      }
+    }
+    return INITIAL_MOLDS;
+  });
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [factoryFilter, setFactoryFilter] = useState<string>('');
@@ -202,7 +215,15 @@ export default function Home() {
     productWeight: 0,
     wasteWeight: 0,
     status: 'pending',
+    projectNumber: '',
   });
+
+  // Save molds to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('molds', JSON.stringify(molds));
+    }
+  }, [molds]);
 
   const t = T[lang];
 
