@@ -90,6 +90,7 @@ function generateMolds(): Mold[] {
         cavities,
         runnerType: RUNNER_TYPES[Math.floor(rand() * RUNNER_TYPES.length)],
         cycleTime,
+        hourlyCapacity: Math.round(cavities * (3600 / cycleTime)),
         oee,
         oeeReason: oee < 0.9 ? '设备老化导致效率下降' : undefined,
         quantity,

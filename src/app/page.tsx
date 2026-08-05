@@ -207,7 +207,7 @@ export default function Home() {
       [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
       [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_MAP[m.runnerType]?.[L] || m.runnerType,
       [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
-      [L === 'zh' ? '每小时产能' : 'Hourly Output']: Math.round(m.cavities * (3600 / m.cycleTime)),
+      [L === 'zh' ? '每小时产能' : 'Hourly Output']: m.hourlyCapacity,
       'OEE': m.oee,
       [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
       [L === 'zh' ? '数量' : 'Quantity']: m.quantity,
@@ -447,7 +447,6 @@ function MoldRow({
   lang: Lang;
 }) {
   const t = T[lang];
-  const hourlyCapacity = Math.round(mold.cavities * (3600 / mold.cycleTime));
   const totalPrice = mold.quantity * mold.unitPrice;
 
   return (
@@ -608,12 +607,12 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <DetailField label={t.hourlyCapacity}>
-                      <div
-                        className="rounded-lg px-3 py-1.5 text-sm"
-                        style={{ backgroundColor: '#e8ede5', color: '#6b7c6b' }}
-                      >
-                        {hourlyCapacity} {t.capacityUnit}
-                      </div>
+                      <input
+                        type="number"
+                        value={mold.hourlyCapacity}
+                        onChange={(e) => onUpdate(mold.id, 'hourlyCapacity', Number(e.target.value))}
+                        className="detail-input"
+                      />
                     </DetailField>
                     <DetailField label={t.oee}>
                       <input

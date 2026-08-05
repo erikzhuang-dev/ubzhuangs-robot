@@ -11,6 +11,7 @@ export interface Mold {
   cavities: number;
   runnerType: string;
   cycleTime: number; // 注塑周期s
+  hourlyCapacity: number; // 每小时产能
   oee: number;
   oeeReason?: string;
   quantity: number;
