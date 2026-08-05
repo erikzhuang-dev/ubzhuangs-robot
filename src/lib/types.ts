@@ -4,7 +4,9 @@ export interface Mold {
   id: string;
   code: string;
   name: string;
+  nameEn?: string;
   supplier: string;
+  supplierEn?: string;
   factory: string;
   buId: string;
   productId: string;
@@ -14,11 +16,13 @@ export interface Mold {
   hourlyCapacity: number; // 每小时产能
   oee: number;
   oeeReason?: string;
+  oeeReasonEn?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
   lossCoefficient: number;
   lossReason?: string;
+  lossReasonEn?: string;
   material: string;
   materialLossCoefficient: number;
   productWeight: number; // 产品单只克重
@@ -29,6 +33,7 @@ export interface Mold {
 export interface Product {
   id: string;
   name: string;
+  nameEn?: string;
   buId: string;
 }
 

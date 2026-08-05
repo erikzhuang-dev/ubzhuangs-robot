@@ -205,11 +205,14 @@ export default function Home() {
     const L = lang;
     const exportData = filteredMolds.map((m) => ({
       [L === 'zh' ? '模具编号' : 'Mold Code']: m.code,
-      [L === 'zh' ? '模具名称' : 'Mold Name']: m.name,
-      [L === 'zh' ? '供应商' : 'Supplier']: m.supplier,
+      [L === 'zh' ? '模具名称' : 'Mold Name']: L === 'zh' ? m.name : (m.nameEn || m.name),
+      [L === 'zh' ? '供应商' : 'Supplier']: L === 'zh' ? m.supplier : (m.supplierEn || m.supplier),
       [L === 'zh' ? '工厂' : 'Factory']: m.factory,
       [L === 'zh' ? '所属BU' : 'Business Unit']: BUS.find((b) => b.id === m.buId)?.name || '',
-      [L === 'zh' ? '所属产品' : 'Product']: PRODUCTS.find((p) => p.id === m.productId)?.name || '',
+      [L === 'zh' ? '所属产品' : 'Product']: (() => {
+        const p = PRODUCTS.find((pp) => pp.id === m.productId);
+        return L === 'zh' ? (p?.name || '') : (p?.nameEn || p?.name || '');
+      })(),
       [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
       [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_MAP[m.runnerType]?.[L] || m.runnerType,
       [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
@@ -491,10 +494,10 @@ function MoldRow({
           {mold.code}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
-          {mold.name}
+          {lang === 'en' ? (mold.nameEn || mold.name) : mold.name}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
-          {mold.supplier}
+          {lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
           {mold.factory}
@@ -535,16 +538,16 @@ function MoldRow({
                     <DetailField label={t.detailName}>
                       <input
                         type="text"
-                        value={mold.name}
-                        onChange={(e) => onUpdate(mold.id, 'name', e.target.value)}
+                        value={lang === 'en' ? (mold.nameEn || mold.name) : mold.name}
+                        onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'nameEn' : 'name', e.target.value)}
                         className="detail-input"
                       />
                     </DetailField>
                     <DetailField label={t.detailSupplier}>
                       <input
                         type="text"
-                        value={mold.supplier}
-                        onChange={(e) => onUpdate(mold.id, 'supplier', e.target.value)}
+                        value={lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
+                        onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'supplierEn' : 'supplier', e.target.value)}
                         className="detail-input"
                       />
                     </DetailField>
@@ -569,7 +572,7 @@ function MoldRow({
                       >
                         {PRODUCTS.filter((p) => p.buId === mold.buId).map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name}
+                            {lang === 'en' ? (p.nameEn || p.name) : p.name}
                           </option>
                         ))}
                       </select>
@@ -652,8 +655,8 @@ function MoldRow({
                     {mold.oee < 0.9 && (
                       <DetailField label={t.oeeLowReason}>
                         <textarea
-                          value={mold.oeeReason || ''}
-                          onChange={(e) => onUpdate(mold.id, 'oeeReason', e.target.value)}
+                          value={lang === 'en' ? (mold.oeeReasonEn || mold.oeeReason || '') : (mold.oeeReason || '')}
+                          onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'oeeReasonEn' : 'oeeReason', e.target.value)}
                           placeholder={t.oeeLowPlaceholder}
                           className="detail-input min-h-[60px] resize-none"
                           style={{ borderColor: '#e74c3c' }}
@@ -703,8 +706,8 @@ function MoldRow({
                     {mold.lossCoefficient !== 0.05 && (
                       <DetailField label={t.modifyReason}>
                         <textarea
-                          value={mold.lossReason || ''}
-                          onChange={(e) => onUpdate(mold.id, 'lossReason', e.target.value)}
+                          value={lang === 'en' ? (mold.lossReasonEn || mold.lossReason || '') : (mold.lossReason || '')}
+                          onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'lossReasonEn' : 'lossReason', e.target.value)}
                           placeholder={t.lossPlaceholder}
                           className="detail-input min-h-[60px] resize-none"
                           style={{ borderColor: '#f39c12' }}
