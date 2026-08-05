@@ -5,12 +5,134 @@ import { BUS, FACTORIES, PRODUCTS, INITIAL_MOLDS } from '@/lib/mock-data';
 import type { Mold } from '@/lib/types';
 import * as XLSX from 'xlsx';
 
-// Status display mapping
-const STATUS_MAP: Record<Mold['status'], { label: string; color: string }> = {
-  active: { label: '使用中', color: 'bg-green-100 text-green-700' },
-  maintenance: { label: '维护中', color: 'bg-yellow-100 text-yellow-700' },
-  retired: { label: '已报废', color: 'bg-gray-100 text-gray-500' },
-  pending: { label: '待启用', color: 'bg-blue-100 text-blue-700' },
+type Lang = 'zh' | 'en';
+
+// Translation dictionaries
+const T = {
+  zh: {
+    title: '模具列表',
+    searchPlaceholder: '搜索模具名称/供应商/编号...',
+    allFactories: '全部工厂',
+    allBU: '全部BU',
+    totalRecords: (n: number) => `共 ${n} 条`,
+    exportExcel: '导出Excel',
+    totalMolds: '模具总数',
+    avgOEE: '平均OEE',
+    avgLossRate: '平均损耗率',
+    // Table headers
+    code: '模具编号',
+    name: '模具名称',
+    supplier: '供应商',
+    factory: '工厂',
+    cavities: '腔数',
+    oee: 'OEE',
+    status: '状态',
+    unitPrice: '单价',
+    noData: '暂无匹配的模具数据',
+    // Status
+    active: '使用中',
+    maintenance: '维护中',
+    retired: '已报废',
+    pending: '待启用',
+    // Detail - left
+    basicInfo: '基本信息',
+    detailName: '名称',
+    detailSupplier: '供应商',
+    belongBU: '所属BU',
+    belongProduct: '所属产品',
+    useFactory: '使用工厂',
+    // Detail - right
+    prodParams: '生产参数与成本',
+    runnerType: '流道类型',
+    cycleTime: '注塑周期(s)',
+    hourlyCapacity: '每小时产能',
+    capacityUnit: '件/小时',
+    oeeLowReason: 'OEE低于0.9的原因',
+    oeeLowPlaceholder: '请填写OEE低于0.9的原因...',
+    quantity: '数量',
+    unitPriceTax: '单价(含税)',
+    totalPrice: '合计价格',
+    lossCoeff: '模具损耗系数',
+    modifyReason: '修改原因',
+    lossPlaceholder: '请填写修改损耗系数的原因...',
+    material: '产品材料',
+    materialLossCoeff: '材料损耗系数',
+    productWeight: '产品单只克重',
+    wasteWeight: '废料克重',
+    // Runner types
+    hotRunner: '热流道',
+    coldRunner: '冷流道',
+    semiHotRunner: '半热流道',
+    valveHotRunner: '针阀式热流道',
+    // Excel sheet name
+    sheetName: '模具列表',
+  },
+  en: {
+    title: 'Mold List',
+    searchPlaceholder: 'Search name / supplier / code...',
+    allFactories: 'All Factories',
+    allBU: 'All BU',
+    totalRecords: (n: number) => `${n} records`,
+    exportExcel: 'Export Excel',
+    totalMolds: 'Total Molds',
+    avgOEE: 'Avg OEE',
+    avgLossRate: 'Avg Loss Rate',
+    code: 'Mold Code',
+    name: 'Mold Name',
+    supplier: 'Supplier',
+    factory: 'Factory',
+    cavities: 'Cavities',
+    oee: 'OEE',
+    status: 'Status',
+    unitPrice: 'Unit Price',
+    noData: 'No matching mold data',
+    active: 'Active',
+    maintenance: 'Maintenance',
+    retired: 'Retired',
+    pending: 'Pending',
+    basicInfo: 'Basic Info',
+    detailName: 'Name',
+    detailSupplier: 'Supplier',
+    belongBU: 'Business Unit',
+    belongProduct: 'Product',
+    useFactory: 'Factory',
+    prodParams: 'Production & Cost',
+    runnerType: 'Runner Type',
+    cycleTime: 'Cycle Time(s)',
+    hourlyCapacity: 'Hourly Output',
+    capacityUnit: 'pcs/hr',
+    oeeLowReason: 'Reason for OEE < 0.9',
+    oeeLowPlaceholder: 'Please enter the reason for OEE below 0.9...',
+    quantity: 'Quantity',
+    unitPriceTax: 'Unit Price (incl. tax)',
+    totalPrice: 'Total Price',
+    lossCoeff: 'Mold Loss Coeff.',
+    modifyReason: 'Modification Reason',
+    lossPlaceholder: 'Please enter the reason for modifying loss coefficient...',
+    material: 'Material',
+    materialLossCoeff: 'Material Loss Coeff.',
+    productWeight: 'Product Weight(g)',
+    wasteWeight: 'Waste Weight(g)',
+    hotRunner: 'Hot Runner',
+    coldRunner: 'Cold Runner',
+    semiHotRunner: 'Semi-Hot Runner',
+    valveHotRunner: 'Valve Hot Runner',
+    sheetName: 'Mold List',
+  },
+} as const;
+
+const STATUS_COLOR: Record<Mold['status'], string> = {
+  active: 'bg-green-100 text-green-700',
+  maintenance: 'bg-yellow-100 text-yellow-700',
+  retired: 'bg-gray-100 text-gray-500',
+  pending: 'bg-blue-100 text-blue-700',
+};
+
+const RUNNER_MAP: Record<string, { zh: string; en: string }> = {
+  '热流道': { zh: '热流道', en: 'Hot Runner' },
+  '冷流道': { zh: '冷流道', en: 'Cold Runner' },
+  '半热流道': { zh: '半热流道', en: 'Semi-Hot Runner' },
+  '针阀式热流道': { zh: '针阀式热流道', en: 'Valve Hot Runner' },
 };
 
 export default function Home() {
@@ -20,6 +142,14 @@ export default function Home() {
   const [factoryFilter, setFactoryFilter] = useState<string>('');
   const [buFilter, setBuFilter] = useState<string>('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [lang, setLang] = useState<Lang>('zh');
+
+  const t = T[lang];
+
+  const statusLabel = useCallback(
+    (s: Mold['status']) => T[lang][s],
+    [lang],
+  );
 
   // Filtered molds
   const filteredMolds = useMemo(() => {
@@ -60,7 +190,6 @@ export default function Home() {
       prev.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, [field]: value };
-        // Auto-calculate totalPrice
         if (field === 'quantity' || field === 'unitPrice') {
           updated.totalPrice = updated.quantity * updated.unitPrice;
         }
@@ -71,33 +200,34 @@ export default function Home() {
 
   // Export Excel
   const handleExport = useCallback(() => {
+    const L = lang;
     const exportData = filteredMolds.map((m) => ({
-      '模具编号': m.code,
-      '模具名称': m.name,
-      '供应商': m.supplier,
-      '工厂': m.factory,
-      '所属BU': BUS.find((b) => b.id === m.buId)?.name || '',
-      '所属产品': PRODUCTS.find((p) => p.id === m.productId)?.name || '',
-      '腔数': m.cavities,
-      '流道类型': m.runnerType,
-      '注塑周期(s)': m.cycleTime,
-      '每小时产能': Math.round(m.cavities * (3600 / m.cycleTime)),
+      [L === 'zh' ? '模具编号' : 'Mold Code']: m.code,
+      [L === 'zh' ? '模具名称' : 'Mold Name']: m.name,
+      [L === 'zh' ? '供应商' : 'Supplier']: m.supplier,
+      [L === 'zh' ? '工厂' : 'Factory']: m.factory,
+      [L === 'zh' ? '所属BU' : 'Business Unit']: BUS.find((b) => b.id === m.buId)?.name || '',
+      [L === 'zh' ? '所属产品' : 'Product']: PRODUCTS.find((p) => p.id === m.productId)?.name || '',
+      [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
+      [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_MAP[m.runnerType]?.[L] || m.runnerType,
+      [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
+      [L === 'zh' ? '每小时产能' : 'Hourly Output']: Math.round(m.cavities * (3600 / m.cycleTime)),
       'OEE': m.oee,
-      '状态': STATUS_MAP[m.status].label,
-      '数量': m.quantity,
-      '单价': m.unitPrice,
-      '合计价格': m.totalPrice,
-      '模具损耗系数': m.lossCoefficient,
-      '产品材料': m.material,
-      '材料损耗系数': m.materialLossCoefficient,
-      '产品单只克重': m.productWeight,
-      '废料克重': m.wasteWeight,
+      [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
+      [L === 'zh' ? '数量' : 'Quantity']: m.quantity,
+      [L === 'zh' ? '单价' : 'Unit Price']: m.unitPrice,
+      [L === 'zh' ? '合计价格' : 'Total Price']: m.totalPrice,
+      [L === 'zh' ? '模具损耗系数' : 'Mold Loss Coeff.']: m.lossCoefficient,
+      [L === 'zh' ? '产品材料' : 'Material']: m.material,
+      [L === 'zh' ? '材料损耗系数' : 'Material Loss Coeff.']: m.materialLossCoefficient,
+      [L === 'zh' ? '产品单只克重' : 'Product Weight(g)']: m.productWeight,
+      [L === 'zh' ? '废料克重' : 'Waste Weight(g)']: m.wasteWeight,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '模具列表');
-    XLSX.writeFile(wb, '模具列表.xlsx');
-  }, [filteredMolds]);
+    XLSX.utils.book_append_sheet(wb, ws, t.sheetName);
+    XLSX.writeFile(wb, `${t.sheetName}.xlsx`);
+  }, [filteredMolds, lang, t.sheetName]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#dce8d0' }}>
@@ -128,7 +258,7 @@ export default function Home() {
                 <div className="px-5 py-4">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      模具总数
+                      {t.totalMolds}
                     </span>
                     <span className="text-xl font-bold" style={{ color: '#2d3b2d' }}>
                       {stats.totalMolds}
@@ -136,7 +266,7 @@ export default function Home() {
                   </div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      平均OEE
+                      {t.avgOEE}
                     </span>
                     <span
                       className="text-lg font-semibold"
@@ -147,7 +277,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      平均损耗率
+                      {t.avgLossRate}
                     </span>
                     <span className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
                       {(stats.avgLossRate * 100).toFixed(1)}%
@@ -165,20 +295,18 @@ export default function Home() {
           style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
         >
           <h2 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
-            模具列表
+            {t.title}
           </h2>
           <div className="flex flex-1 items-center justify-end gap-3">
             {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="搜索模具名称/供应商/编号..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="h-9 w-64 rounded-lg border px-3 py-1 text-sm outline-none transition-colors focus:border-[#4a7c59]"
-                style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
-              />
-            </div>
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="h-9 w-64 rounded-lg border px-3 py-1 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+              style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+            />
             {/* Factory filter */}
             <select
               value={factoryFilter}
@@ -186,7 +314,7 @@ export default function Home() {
               className="h-9 rounded-lg border px-3 text-sm outline-none"
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             >
-              <option value="">全部工厂</option>
+              <option value="">{t.allFactories}</option>
               {FACTORIES.map((f) => (
                 <option key={f} value={f}>
                   {f}
@@ -200,7 +328,7 @@ export default function Home() {
               className="h-9 rounded-lg border px-3 text-sm outline-none"
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             >
-              <option value="">全部BU</option>
+              <option value="">{t.allBU}</option>
               {BUS.map((bu) => (
                 <option key={bu.id} value={bu.id}>
                   {bu.shortName}
@@ -208,8 +336,8 @@ export default function Home() {
               ))}
             </select>
             {/* Record count */}
-            <span className="text-sm" style={{ color: '#6b7c6b' }}>
-              共 {filteredMolds.length} 条
+            <span className="text-sm whitespace-nowrap" style={{ color: '#6b7c6b' }}>
+              {t.totalRecords(filteredMolds.length)}
             </span>
             {/* Export button */}
             <button
@@ -231,7 +359,30 @@ export default function Home() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              导出Excel
+              {t.exportExcel}
+            </button>
+            {/* Language toggle */}
+            <button
+              onClick={() => setLang((prev) => (prev === 'zh' ? 'en' : 'zh'))}
+              className="flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#e0e8dc', color: '#4a7c59' }}
+              title={lang === 'zh' ? 'Switch to English' : '切换为中文'}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              {lang === 'zh' ? 'EN' : '中'}
             </button>
           </div>
         </div>
@@ -244,46 +395,30 @@ export default function Home() {
           <table className="w-full">
             <thead>
               <tr style={{ backgroundColor: '#f0f7ec' }}>
-                <th className="w-10 px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  模具编号
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  模具名称
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  供应商
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  工厂
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  腔数
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  OEE
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  状态
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                  单价
-                </th>
+                <th className="w-10 px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}></th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.code}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.name}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.oee}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.status}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.unitPrice}</th>
               </tr>
             </thead>
             <tbody>
               {filteredMolds.map((mold) => {
                 const isExpanded = expandedRow === mold.id;
-                const statusInfo = STATUS_MAP[mold.status];
                 return (
                   <MoldRow
                     key={mold.id}
                     mold={mold}
                     isExpanded={isExpanded}
-                    statusInfo={statusInfo}
+                    statusLabel={statusLabel(mold.status)}
+                    statusColor={STATUS_COLOR[mold.status]}
                     onToggle={() => setExpandedRow(isExpanded ? null : mold.id)}
                     onUpdate={updateMold}
+                    lang={lang}
                   />
                 );
               })}
@@ -291,7 +426,7 @@ export default function Home() {
           </table>
           {filteredMolds.length === 0 && (
             <div className="py-12 text-center text-sm" style={{ color: '#6b7c6b' }}>
-              暂无匹配的模具数据
+              {t.noData}
             </div>
           )}
         </div>
@@ -304,16 +439,21 @@ export default function Home() {
 function MoldRow({
   mold,
   isExpanded,
-  statusInfo,
+  statusLabel,
+  statusColor,
   onToggle,
   onUpdate,
+  lang,
 }: {
   mold: Mold;
   isExpanded: boolean;
-  statusInfo: { label: string; color: string };
+  statusLabel: string;
+  statusColor: string;
   onToggle: () => void;
   onUpdate: (id: string, field: keyof Mold, value: unknown) => void;
+  lang: Lang;
 }) {
+  const t = T[lang];
   const hourlyCapacity = Math.round(mold.cavities * (3600 / mold.cycleTime));
   const totalPrice = mold.quantity * mold.unitPrice;
 
@@ -359,8 +499,8 @@ function MoldRow({
           </span>
         </td>
         <td className="px-3 py-3 text-sm">
-          <span className={`rounded-full px-2 py-0.5 text-xs ${statusInfo.color}`}>
-            {statusInfo.label}
+          <span className={`rounded-full px-2 py-0.5 text-xs ${statusColor}`}>
+            {statusLabel}
           </span>
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
@@ -372,18 +512,15 @@ function MoldRow({
       {isExpanded && (
         <tr>
           <td colSpan={9} className="p-0">
-            <div
-              className="px-6 py-5"
-              style={{ backgroundColor: '#f0f7ec' }}
-            >
+            <div className="px-6 py-5" style={{ backgroundColor: '#f0f7ec' }}>
               <div className="grid grid-cols-2 gap-8">
                 {/* Left column - Basic Info */}
                 <div>
                   <h4 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
-                    基本信息
+                    {t.basicInfo}
                   </h4>
                   <div className="space-y-3">
-                    <DetailField label="名称">
+                    <DetailField label={t.detailName}>
                       <input
                         type="text"
                         value={mold.name}
@@ -391,7 +528,7 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label="供应商">
+                    <DetailField label={t.detailSupplier}>
                       <input
                         type="text"
                         value={mold.supplier}
@@ -399,7 +536,7 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label="所属BU">
+                    <DetailField label={t.belongBU}>
                       <select
                         value={mold.buId}
                         onChange={(e) => onUpdate(mold.id, 'buId', e.target.value)}
@@ -412,7 +549,7 @@ function MoldRow({
                         ))}
                       </select>
                     </DetailField>
-                    <DetailField label="所属产品">
+                    <DetailField label={t.belongProduct}>
                       <select
                         value={mold.productId}
                         onChange={(e) => onUpdate(mold.id, 'productId', e.target.value)}
@@ -425,7 +562,7 @@ function MoldRow({
                         ))}
                       </select>
                     </DetailField>
-                    <DetailField label="使用工厂">
+                    <DetailField label={t.useFactory}>
                       <select
                         value={mold.factory}
                         onChange={(e) => onUpdate(mold.id, 'factory', e.target.value)}
@@ -444,11 +581,11 @@ function MoldRow({
                 {/* Right column - Production & Cost */}
                 <div>
                   <h4 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
-                    生产参数与成本
+                    {t.prodParams}
                   </h4>
                   <div className="space-y-3">
                     <div className="grid grid-cols-3 gap-3">
-                      <DetailField label="腔数">
+                      <DetailField label={t.cavities}>
                         <input
                           type="number"
                           value={mold.cavities}
@@ -456,19 +593,19 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label="流道类型">
+                      <DetailField label={t.runnerType}>
                         <select
                           value={mold.runnerType}
                           onChange={(e) => onUpdate(mold.id, 'runnerType', e.target.value)}
                           className="detail-input"
                         >
-                          <option value="热流道">热流道</option>
-                          <option value="冷流道">冷流道</option>
-                          <option value="半热流道">半热流道</option>
-                          <option value="针阀式热流道">针阀式热流道</option>
+                          <option value="热流道">{t.hotRunner}</option>
+                          <option value="冷流道">{t.coldRunner}</option>
+                          <option value="半热流道">{t.semiHotRunner}</option>
+                          <option value="针阀式热流道">{t.valveHotRunner}</option>
                         </select>
                       </DetailField>
-                      <DetailField label="注塑周期(s)">
+                      <DetailField label={t.cycleTime}>
                         <input
                           type="number"
                           value={mold.cycleTime}
@@ -477,15 +614,15 @@ function MoldRow({
                         />
                       </DetailField>
                     </div>
-                    <DetailField label="每小时产能">
+                    <DetailField label={t.hourlyCapacity}>
                       <div
                         className="rounded-lg px-3 py-1.5 text-sm"
                         style={{ backgroundColor: '#e8ede5', color: '#6b7c6b' }}
                       >
-                        {hourlyCapacity} 件/小时
+                        {hourlyCapacity} {t.capacityUnit}
                       </div>
                     </DetailField>
-                    <DetailField label="OEE">
+                    <DetailField label={t.oee}>
                       <input
                         type="number"
                         step="0.01"
@@ -501,18 +638,18 @@ function MoldRow({
                       />
                     </DetailField>
                     {mold.oee < 0.9 && (
-                      <DetailField label="OEE低于0.9的原因">
+                      <DetailField label={t.oeeLowReason}>
                         <textarea
                           value={mold.oeeReason || ''}
                           onChange={(e) => onUpdate(mold.id, 'oeeReason', e.target.value)}
-                          placeholder="请填写OEE低于0.9的原因..."
+                          placeholder={t.oeeLowPlaceholder}
                           className="detail-input min-h-[60px] resize-none"
                           style={{ borderColor: '#e74c3c' }}
                         />
                       </DetailField>
                     )}
                     <div className="grid grid-cols-3 gap-3">
-                      <DetailField label="数量">
+                      <DetailField label={t.quantity}>
                         <input
                           type="number"
                           value={mold.quantity}
@@ -520,7 +657,7 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label="单价(含税)">
+                      <DetailField label={t.unitPriceTax}>
                         <input
                           type="number"
                           step="0.01"
@@ -529,7 +666,7 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label="合计价格">
+                      <DetailField label={t.totalPrice}>
                         <div
                           className="rounded-lg px-3 py-1.5 text-sm"
                           style={{ backgroundColor: '#e8ede5', color: '#6b7c6b' }}
@@ -538,7 +675,7 @@ function MoldRow({
                         </div>
                       </DetailField>
                     </div>
-                    <DetailField label="模具损耗系数">
+                    <DetailField label={t.lossCoeff}>
                       <input
                         type="number"
                         step="0.01"
@@ -552,18 +689,18 @@ function MoldRow({
                       />
                     </DetailField>
                     {mold.lossCoefficient !== 0.05 && (
-                      <DetailField label="修改原因">
+                      <DetailField label={t.modifyReason}>
                         <textarea
                           value={mold.lossReason || ''}
                           onChange={(e) => onUpdate(mold.id, 'lossReason', e.target.value)}
-                          placeholder="请填写修改损耗系数的原因..."
+                          placeholder={t.lossPlaceholder}
                           className="detail-input min-h-[60px] resize-none"
                           style={{ borderColor: '#f39c12' }}
                         />
                       </DetailField>
                     )}
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label="产品材料">
+                      <DetailField label={t.material}>
                         <input
                           type="text"
                           value={mold.material}
@@ -571,7 +708,7 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label="材料损耗系数">
+                      <DetailField label={t.materialLossCoeff}>
                         <input
                           type="number"
                           step="0.01"
@@ -582,7 +719,7 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label="产品单只克重">
+                      <DetailField label={t.productWeight}>
                         <input
                           type="number"
                           step="0.01"
@@ -591,7 +728,7 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label="废料克重">
+                      <DetailField label={t.wasteWeight}>
                         <input
                           type="number"
                           step="0.01"
