@@ -732,73 +732,15 @@ function AnalysisModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-2 gap-6">
-            {/* Product Distribution */}
-            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
-              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
-                {t.moldByProduct}
-              </h3>
-              <div className="space-y-2.5">
-                {productStats.map((stat, idx) => (
-                  <div key={stat.name} className="flex items-center gap-3">
-                    <div className="w-24 truncate text-xs" style={{ color: '#6b7c6b' }} title={stat.name}>
-                      {stat.name}
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-5 overflow-hidden rounded-full" style={{ backgroundColor: '#f0f7ec' }}>
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(stat.count / maxProductCount) * 100}%`,
-                            backgroundColor: COLORS[idx % COLORS.length],
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="w-8 text-right text-xs font-medium" style={{ color: '#2d3b2d' }}>
-                      {stat.count}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Factory Distribution */}
-            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
-              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
-                {t.moldByFactory}
-              </h3>
-              <div className="space-y-2.5">
-                {factoryStats.map((stat, idx) => (
-                  <div key={stat.name} className="flex items-center gap-3">
-                    <div className="w-24 text-xs font-medium" style={{ color: '#6b7c6b' }}>
-                      {stat.name}
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-5 overflow-hidden rounded-full" style={{ backgroundColor: '#f0f7ec' }}>
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(stat.count / maxFactoryCount) * 100}%`,
-                            backgroundColor: COLORS[idx % COLORS.length],
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="w-8 text-right text-xs font-medium" style={{ color: '#2d3b2d' }}>
-                      {stat.count}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Status Distribution - Donut Chart */}
-            <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
-              <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
-                {t.moldByStatus}
-              </h3>
-              <div className="flex items-center gap-6">
+          <div className="grid grid-cols-1 gap-6">
+            {/* Top row: Status and BU donut charts */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Status Distribution - Donut Chart */}
+              <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+                <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                  {t.moldByStatus}
+                </h3>
+                <div className="flex items-center gap-6">
                 <DonutChart
                   segments={statusStats.map((stat, idx) => ({
                     value: stat.count,
@@ -849,6 +791,70 @@ function AnalysisModal({
                       <span className="text-xs font-medium" style={{ color: '#2d3b2d' }}>
                         {stat.count}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            </div>
+
+            {/* Bottom row: Product and Factory bar charts */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Product Distribution */}
+              <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+                <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                  {t.moldByProduct}
+                </h3>
+                <div className="space-y-2.5">
+                  {productStats.map((stat, idx) => (
+                    <div key={stat.name} className="flex items-center gap-3">
+                      <div className="w-24 truncate text-xs" style={{ color: '#6b7c6b' }} title={stat.name}>
+                        {stat.name}
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-5 overflow-hidden rounded-full" style={{ backgroundColor: '#f0f7ec' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${(stat.count / maxProductCount) * 100}%`,
+                              backgroundColor: COLORS[idx % COLORS.length],
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="w-8 text-right text-xs font-medium" style={{ color: '#2d3b2d' }}>
+                        {stat.count}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Factory Distribution */}
+              <div className="rounded-xl border p-5" style={{ borderColor: '#e0e8dc' }}>
+                <h3 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                  {t.moldByFactory}
+                </h3>
+                <div className="space-y-2.5">
+                  {factoryStats.map((stat, idx) => (
+                    <div key={stat.name} className="flex items-center gap-3">
+                      <div className="w-24 text-xs font-medium" style={{ color: '#6b7c6b' }}>
+                        {stat.name}
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-5 overflow-hidden rounded-full" style={{ backgroundColor: '#f0f7ec' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${(stat.count / maxFactoryCount) * 100}%`,
+                              backgroundColor: COLORS[idx % COLORS.length],
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="w-8 text-right text-xs font-medium" style={{ color: '#2d3b2d' }}>
+                        {stat.count}
+                      </div>
                     </div>
                   ))}
                 </div>
