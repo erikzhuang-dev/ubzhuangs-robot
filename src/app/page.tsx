@@ -1076,6 +1076,18 @@ function MoldRow({
                         ))}
                       </select>
                     </DetailField>
+                    <DetailField label={t.status}>
+                      <select
+                        value={mold.status}
+                        onChange={(e) => onUpdate(mold.id, 'status', e.target.value)}
+                        className="detail-input"
+                      >
+                        <option value="active">{t.active}</option>
+                        <option value="maintenance">{t.maintenance}</option>
+                        <option value="retired">{t.retired}</option>
+                        <option value="pending">{t.pending}</option>
+                      </select>
+                    </DetailField>
                   </div>
                 </div>
 
