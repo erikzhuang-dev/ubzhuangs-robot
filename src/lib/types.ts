@@ -10,6 +10,8 @@ export interface Mold {
   factory: string;
   buId: string;
   productId: string;
+  productName?: string;
+  productNameEn?: string;
   cavities: number;
   runnerType: string;
   cycleTime: number; // 注塑周期s

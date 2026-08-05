@@ -36,7 +36,7 @@ const T = {
     unitPrice: '单价',
     noData: '暂无匹配的模具数据',
     // Status
-    active: '使用中',
+    active: 'In Use',
     maintenance: '维护中',
     retired: '已报废',
     pending: '待启用',
@@ -59,7 +59,7 @@ const T = {
     unitPriceTax: '单价(含税)',
     totalPrice: '合计价格',
     lossCoeff: '模具损耗系数',
-    modifyReason: '修改原因',
+    modifyReason: '损耗原因',
     lossPlaceholder: '请填写修改损耗系数的原因...',
     material: '产品材料',
     materialLossCoeff: '材料损耗系数',
@@ -98,7 +98,7 @@ const T = {
     status: 'Status',
     unitPrice: 'Unit Price',
     noData: 'No matching mold data',
-    active: 'Active',
+    active: 'In Use',
     maintenance: 'Maintenance',
     retired: 'Retired',
     pending: 'Pending',
@@ -119,7 +119,7 @@ const T = {
     unitPriceTax: 'Unit Price (incl. tax)',
     totalPrice: 'Total Price',
     lossCoeff: 'Mold Loss Coeff.',
-    modifyReason: 'Modification Reason',
+    modifyReason: 'Reasons for Loss',
     lossPlaceholder: 'Please enter the reason for modifying loss coefficient...',
     material: 'Material',
     materialLossCoeff: 'Material Loss Coeff.',
@@ -164,6 +164,8 @@ export default function Home() {
     factory: 'LD',
     buId: BUS[0].id,
     productId: '',
+    productName: '',
+    productNameEn: '',
     cavities: 1,
     runnerType: '热流道',
     cycleTime: 30,
@@ -287,6 +289,8 @@ export default function Home() {
       factory: newMold.factory || 'LD',
       buId: newMold.buId || BUS[0].id,
       productId: newMold.productId || '',
+      productName: newMold.productName || '',
+      productNameEn: newMold.productNameEn || '',
       cavities: newMold.cavities || 1,
       runnerType: newMold.runnerType || '热流道',
       cycleTime: newMold.cycleTime || 30,
@@ -317,6 +321,8 @@ export default function Home() {
       factory: 'LD',
       buId: BUS[0].id,
       productId: '',
+      productName: '',
+      productNameEn: '',
       cavities: 1,
       runnerType: '热流道',
       cycleTime: 30,
@@ -1057,17 +1063,12 @@ function AddMoldModal({
                   </select>
                 </DetailField>
                 <DetailField label={t.belongProduct}>
-                  <select
-                    value={newMold.productId || ''}
-                    onChange={(e) => onUpdate('productId', e.target.value)}
+                  <input
+                    type="text"
+                    value={lang === 'en' ? (newMold.productNameEn || '') : (newMold.productName || '')}
+                    onChange={(e) => onUpdate(lang === 'en' ? 'productNameEn' : 'productName', e.target.value)}
                     className="detail-input"
-                  >
-                    {PRODUCTS.filter((p) => p.buId === (newMold.buId || BUS[0].id)).map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {lang === 'en' ? (p.nameEn || p.name) : p.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </DetailField>
                 <DetailField label={t.useFactory}>
                   <select
