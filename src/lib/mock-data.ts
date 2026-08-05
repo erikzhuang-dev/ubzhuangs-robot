@@ -81,9 +81,12 @@ function generateMolds(): Mold[] {
   const rand = seededRandom(42);
   let moldIndex = 1;
 
-  for (const product of PRODUCTS) {
-    const moldCount = Math.floor(rand() * 4) + 5; // 5-8 molds per product
-    for (let i = 0; i < moldCount; i++) {
+  // 每个BU生成10个模具
+  const moldsPerBu = 10;
+  for (const bu of BUS) {
+    const buProducts = PRODUCTS.filter(p => p.buId === bu.id);
+    for (let i = 0; i < moldsPerBu; i++) {
+      const product = buProducts[i % buProducts.length];
       const cavities = [1, 2, 4, 8, 12, 16, 24, 32][Math.floor(rand() * 8)];
       const cycleTime = Math.floor(rand() * 40) + 10; // 10-50s
       const oee = Math.round((rand() * 0.3 + 0.75) * 100) / 100; // 0.75-1.05
@@ -94,13 +97,13 @@ function generateMolds(): Mold[] {
       const supplier = SUPPLIERS[Math.floor(rand() * SUPPLIERS.length)];
       const mold: Mold = {
         id: `m${String(moldIndex).padStart(3, '0')}`,
-        code: `M${product.buId.toUpperCase().replace('BU', '')}-${String(moldIndex).padStart(4, '0')}`,
-        name: `${product.name}模具-${String.fromCharCode(65 + i)}型`,
-        nameEn: `${product.nameEn} Mold-Type ${String.fromCharCode(65 + i)}`,
+        code: `M${bu.id.toUpperCase().replace('BU', '')}-${String(moldIndex).padStart(4, '0')}`,
+        name: `${product.name}模具-${String.fromCharCode(65 + (i % buProducts.length))}型`,
+        nameEn: `${product.nameEn} Mold-Type ${String.fromCharCode(65 + (i % buProducts.length))}`,
         supplier: supplier.cn,
         supplierEn: supplier.en,
         factory: FACTORIES[Math.floor(rand() * FACTORIES.length)],
-        buId: product.buId,
+        buId: bu.id,
         productId: product.id,
         cavities,
         runnerType: RUNNER_TYPES[Math.floor(rand() * RUNNER_TYPES.length)],
