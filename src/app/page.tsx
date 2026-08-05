@@ -16,6 +16,10 @@ const T = {
     allBU: '全部BU',
     totalRecords: (n: number) => `共 ${n} 条`,
     exportExcel: '导出Excel',
+    addMold: '添加',
+    addMoldTitle: '添加模具',
+    cancel: '取消',
+    save: '保存',
     totalMolds: '模具总数',
     activeCount: '使用中数量',
     pendingCount: '设计中数量',
@@ -76,6 +80,10 @@ const T = {
     allBU: 'All BU',
     totalRecords: (n: number) => `${n} records`,
     exportExcel: 'Export Excel',
+    addMold: 'Add',
+    addMoldTitle: 'Add Mold',
+    cancel: 'Cancel',
+    save: 'Save',
     totalMolds: 'Total Molds',
     activeCount: 'Active',
     pendingCount: 'In Design',
@@ -147,6 +155,34 @@ export default function Home() {
   const [buFilter, setBuFilter] = useState<string>('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>('en');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newMold, setNewMold] = useState<Partial<Mold>>({
+    name: '',
+    nameEn: '',
+    supplier: '',
+    supplierEn: '',
+    factory: 'LD',
+    buId: BUS[0].id,
+    productId: '',
+    cavities: 1,
+    runnerType: '热流道',
+    cycleTime: 30,
+    hourlyCapacity: 120,
+    oee: 0.9,
+    oeeReason: '',
+    oeeReasonEn: '',
+    quantity: 1,
+    unitPrice: 0,
+    totalPrice: 0,
+    lossCoefficient: 0.05,
+    lossReason: '',
+    lossReasonEn: '',
+    material: '',
+    materialLossCoefficient: 0.02,
+    productWeight: 0,
+    wasteWeight: 0,
+    status: 'pending',
+  });
 
   const t = T[lang];
 
@@ -233,6 +269,84 @@ export default function Home() {
     XLSX.utils.book_append_sheet(wb, ws, t.sheetName);
     XLSX.writeFile(wb, `${t.sheetName}.xlsx`);
   }, [filteredMolds, lang, t.sheetName]);
+
+  // Add new mold
+  const handleAddMold = useCallback(() => {
+    const maxCode = molds.reduce((max, m) => {
+      const num = parseInt(m.code.replace('M', '').replace('-', ''), 10);
+      return num > max ? num : max;
+    }, 0);
+    const newCode = `M${String(maxCode + 1).padStart(4, '0')}`;
+    const mold: Mold = {
+      id: `mold-${Date.now()}`,
+      code: newCode,
+      name: newMold.name || '',
+      nameEn: newMold.nameEn || '',
+      supplier: newMold.supplier || '',
+      supplierEn: newMold.supplierEn || '',
+      factory: newMold.factory || 'LD',
+      buId: newMold.buId || BUS[0].id,
+      productId: newMold.productId || '',
+      cavities: newMold.cavities || 1,
+      runnerType: newMold.runnerType || '热流道',
+      cycleTime: newMold.cycleTime || 30,
+      hourlyCapacity: newMold.hourlyCapacity || 120,
+      oee: newMold.oee || 0.9,
+      oeeReason: newMold.oeeReason || '',
+      oeeReasonEn: newMold.oeeReasonEn || '',
+      quantity: newMold.quantity || 1,
+      unitPrice: newMold.unitPrice || 0,
+      totalPrice: (newMold.quantity || 1) * (newMold.unitPrice || 0),
+      lossCoefficient: newMold.lossCoefficient || 0.05,
+      lossReason: newMold.lossReason || '',
+      lossReasonEn: newMold.lossReasonEn || '',
+      material: newMold.material || '',
+      materialLossCoefficient: newMold.materialLossCoefficient || 0.02,
+      productWeight: newMold.productWeight || 0,
+      wasteWeight: newMold.wasteWeight || 0,
+      status: newMold.status || 'pending',
+    };
+    setMolds((prev) => [...prev, mold]);
+    setShowAddModal(false);
+    setExpandedRow(mold.id);
+    setNewMold({
+      name: '',
+      nameEn: '',
+      supplier: '',
+      supplierEn: '',
+      factory: 'LD',
+      buId: BUS[0].id,
+      productId: '',
+      cavities: 1,
+      runnerType: '热流道',
+      cycleTime: 30,
+      hourlyCapacity: 120,
+      oee: 0.9,
+      oeeReason: '',
+      oeeReasonEn: '',
+      quantity: 1,
+      unitPrice: 0,
+      totalPrice: 0,
+      lossCoefficient: 0.05,
+      lossReason: '',
+      lossReasonEn: '',
+      material: '',
+      materialLossCoefficient: 0.02,
+      productWeight: 0,
+      wasteWeight: 0,
+      status: 'pending',
+    });
+  }, [molds, newMold]);
+
+  const updateNewMold = useCallback((field: keyof Mold, value: unknown) => {
+    setNewMold((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (field === 'quantity' || field === 'unitPrice') {
+        updated.totalPrice = (updated.quantity || 1) * (updated.unitPrice || 0);
+      }
+      return updated;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#dce8d0' }}>
@@ -355,6 +469,27 @@ export default function Home() {
             <span className="text-sm whitespace-nowrap" style={{ color: '#6b7c6b' }}>
               {t.totalRecords(filteredMolds.length)}
             </span>
+            {/* Add button */}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: '#4a7c59' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {t.addMold}
+            </button>
             {/* Export button */}
             <button
               onClick={handleExport}
@@ -446,6 +581,17 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Add Mold Modal */}
+        {showAddModal && (
+          <AddMoldModal
+            newMold={newMold}
+            onUpdate={updateNewMold}
+            onSave={handleAddMold}
+            onCancel={() => setShowAddModal(false)}
+            lang={lang}
+          />
+        )}
       </div>
     </div>
   );
@@ -830,5 +976,310 @@ function DonutChart({
         />
       ))}
     </svg>
+  );
+}
+
+// Add Mold Modal Component
+function AddMoldModal({
+  newMold,
+  onUpdate,
+  onSave,
+  onCancel,
+  lang,
+}: {
+  newMold: Partial<Mold>;
+  onUpdate: (field: keyof Mold, value: unknown) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  lang: Lang;
+}) {
+  const t = T[lang];
+  const totalPrice = (newMold.quantity || 1) * (newMold.unitPrice || 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+      <div className="mx-4 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white" style={{ boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)' }}>
+        {/* Modal header */}
+        <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
+          <h3 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
+            {t.addMoldTitle}
+          </h3>
+          <button onClick={onCancel} className="rounded-lg p-1 transition-colors hover:bg-gray-100">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7c6b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Modal body */}
+        <div className="px-6 py-5" style={{ backgroundColor: '#f0f7ec' }}>
+          <div className="grid grid-cols-2 gap-8">
+            {/* Left column - Basic Info */}
+            <div>
+              <h4 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.basicInfo}
+              </h4>
+              <div className="space-y-3">
+                <DetailField label={t.detailName}>
+                  <input
+                    type="text"
+                    value={lang === 'en' ? (newMold.nameEn || '') : (newMold.name || '')}
+                    onChange={(e) => onUpdate(lang === 'en' ? 'nameEn' : 'name', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.detailSupplier}>
+                  <input
+                    type="text"
+                    value={lang === 'en' ? (newMold.supplierEn || '') : (newMold.supplier || '')}
+                    onChange={(e) => onUpdate(lang === 'en' ? 'supplierEn' : 'supplier', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.belongBU}>
+                  <select
+                    value={newMold.buId || BUS[0].id}
+                    onChange={(e) => {
+                      const buId = e.target.value;
+                      onUpdate('buId', buId);
+                      // Reset product when BU changes
+                      const buProducts = PRODUCTS.filter((p) => p.buId === buId);
+                      onUpdate('productId', buProducts[0]?.id || '');
+                    }}
+                    className="detail-input"
+                  >
+                    {BUS.map((bu) => (
+                      <option key={bu.id} value={bu.id}>
+                        {bu.name}
+                      </option>
+                    ))}
+                  </select>
+                </DetailField>
+                <DetailField label={t.belongProduct}>
+                  <select
+                    value={newMold.productId || ''}
+                    onChange={(e) => onUpdate('productId', e.target.value)}
+                    className="detail-input"
+                  >
+                    {PRODUCTS.filter((p) => p.buId === (newMold.buId || BUS[0].id)).map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {lang === 'en' ? (p.nameEn || p.name) : p.name}
+                      </option>
+                    ))}
+                  </select>
+                </DetailField>
+                <DetailField label={t.useFactory}>
+                  <select
+                    value={newMold.factory || 'LD'}
+                    onChange={(e) => onUpdate('factory', e.target.value)}
+                    className="detail-input"
+                  >
+                    {FACTORIES.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                </DetailField>
+                <DetailField label={t.status}>
+                  <select
+                    value={newMold.status || 'pending'}
+                    onChange={(e) => onUpdate('status', e.target.value)}
+                    className="detail-input"
+                  >
+                    <option value="active">{t.active}</option>
+                    <option value="maintenance">{t.maintenance}</option>
+                    <option value="retired">{t.retired}</option>
+                    <option value="pending">{t.pending}</option>
+                  </select>
+                </DetailField>
+              </div>
+            </div>
+
+            {/* Right column - Production & Cost */}
+            <div>
+              <h4 className="mb-4 text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.prodParams}
+              </h4>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <DetailField label={t.cavities}>
+                    <input
+                      type="number"
+                      value={newMold.cavities ?? 1}
+                      onChange={(e) => onUpdate('cavities', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                  <DetailField label={t.runnerType}>
+                    <select
+                      value={newMold.runnerType || '热流道'}
+                      onChange={(e) => onUpdate('runnerType', e.target.value)}
+                      className="detail-input"
+                    >
+                      <option value="热流道">{t.hotRunner}</option>
+                      <option value="冷流道">{t.coldRunner}</option>
+                      <option value="半热流道">{t.semiHotRunner}</option>
+                      <option value="针阀式热流道">{t.valveHotRunner}</option>
+                    </select>
+                  </DetailField>
+                  <DetailField label={t.cycleTime}>
+                    <input
+                      type="number"
+                      value={newMold.cycleTime ?? 30}
+                      onChange={(e) => onUpdate('cycleTime', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                </div>
+                <DetailField label={t.hourlyCapacity}>
+                  <input
+                    type="number"
+                    value={newMold.hourlyCapacity ?? 120}
+                    onChange={(e) => onUpdate('hourlyCapacity', Number(e.target.value))}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.oee}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    value={newMold.oee ?? 0.9}
+                    onChange={(e) => onUpdate('oee', Number(e.target.value))}
+                    className="detail-input"
+                    style={{
+                      borderColor: (newMold.oee ?? 0.9) < 0.9 ? '#e74c3c' : '#e0e8dc',
+                      borderWidth: (newMold.oee ?? 0.9) < 0.9 ? '2px' : '1px',
+                    }}
+                  />
+                </DetailField>
+                {(newMold.oee ?? 0.9) < 0.9 && (
+                  <DetailField label={t.oeeLowReason}>
+                    <textarea
+                      value={lang === 'en' ? (newMold.oeeReasonEn || '') : (newMold.oeeReason || '')}
+                      onChange={(e) => onUpdate(lang === 'en' ? 'oeeReasonEn' : 'oeeReason', e.target.value)}
+                      placeholder={t.oeeLowPlaceholder}
+                      className="detail-input min-h-[60px] resize-none"
+                      style={{ borderColor: '#e74c3c' }}
+                    />
+                  </DetailField>
+                )}
+                <div className="grid grid-cols-3 gap-3">
+                  <DetailField label={t.quantity}>
+                    <input
+                      type="number"
+                      value={newMold.quantity ?? 1}
+                      onChange={(e) => onUpdate('quantity', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                  <DetailField label={t.unitPriceTax}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newMold.unitPrice ?? 0}
+                      onChange={(e) => onUpdate('unitPrice', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                  <DetailField label={t.totalPrice}>
+                    <div
+                      className="rounded-lg px-3 py-1.5 text-sm"
+                      style={{ backgroundColor: '#e8ede5', color: '#6b7c6b' }}
+                    >
+                      ¥{totalPrice.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    </div>
+                  </DetailField>
+                </div>
+                <DetailField label={t.lossCoeff}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newMold.lossCoefficient ?? 0.05}
+                    onChange={(e) => onUpdate('lossCoefficient', Number(e.target.value))}
+                    className="detail-input"
+                    style={{
+                      borderColor: (newMold.lossCoefficient ?? 0.05) !== 0.05 ? '#f39c12' : '#e0e8dc',
+                      borderWidth: (newMold.lossCoefficient ?? 0.05) !== 0.05 ? '2px' : '1px',
+                    }}
+                  />
+                </DetailField>
+                {(newMold.lossCoefficient ?? 0.05) !== 0.05 && (
+                  <DetailField label={t.modifyReason}>
+                    <textarea
+                      value={lang === 'en' ? (newMold.lossReasonEn || '') : (newMold.lossReason || '')}
+                      onChange={(e) => onUpdate(lang === 'en' ? 'lossReasonEn' : 'lossReason', e.target.value)}
+                      placeholder={t.lossPlaceholder}
+                      className="detail-input min-h-[60px] resize-none"
+                      style={{ borderColor: '#f39c12' }}
+                    />
+                  </DetailField>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailField label={t.material}>
+                    <input
+                      type="text"
+                      value={newMold.material || ''}
+                      onChange={(e) => onUpdate('material', e.target.value)}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                  <DetailField label={t.materialLossCoeff}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newMold.materialLossCoefficient ?? 0.02}
+                      onChange={(e) => onUpdate('materialLossCoefficient', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailField label={t.productWeight}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newMold.productWeight ?? 0}
+                      onChange={(e) => onUpdate('productWeight', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                  <DetailField label={t.wasteWeight}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newMold.wasteWeight ?? 0}
+                      onChange={(e) => onUpdate('wasteWeight', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal footer */}
+        <div className="flex items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
+          <button
+            onClick={onCancel}
+            className="h-9 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+            style={{ borderColor: '#e0e8dc', color: '#6b7c6b' }}
+          >
+            {t.cancel}
+          </button>
+          <button
+            onClick={onSave}
+            className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            {t.save}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
