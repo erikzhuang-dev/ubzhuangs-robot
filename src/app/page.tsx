@@ -248,12 +248,12 @@ export default function Home() {
       prev.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, [field]: value };
-        // Auto-calculate hourly capacity when cavities or cycleTime changes
+        // Auto-calculate hourly capacity: 3600  cycleTime(s) × cavities
         if (field === 'cavities' || field === 'cycleTime') {
           const cavities = field === 'cavities' ? Number(value) : updated.cavities;
           const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime;
           if (cycleTime > 0) {
-            updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
+            updated.hourlyCapacity = Math.round((3600 / cycleTime) * cavities);
           }
         }
         if (field === 'quantity' || field === 'unitPrice') {
@@ -375,12 +375,12 @@ export default function Home() {
   const updateNewMold = useCallback((field: keyof Mold, value: unknown) => {
     setNewMold((prev) => {
       const updated = { ...prev, [field]: value };
-      // Auto-calculate hourly capacity when cavities or cycleTime changes
+      // Auto-calculate hourly capacity: 3600  cycleTime(s) × cavities
       if (field === 'cavities' || field === 'cycleTime') {
         const cavities = field === 'cavities' ? Number(value) : updated.cavities || 1;
         const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime || 30;
         if (cycleTime > 0) {
-          updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
+          updated.hourlyCapacity = Math.round((3600 / cycleTime) * cavities);
         }
       }
       if (field === 'quantity' || field === 'unitPrice') {
