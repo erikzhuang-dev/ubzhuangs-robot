@@ -85,7 +85,7 @@ const T = {
     cancel: 'Cancel',
     save: 'Save',
     totalMolds: 'Total Molds',
-    activeCount: 'Active',
+    activeCount: 'In Use',
     pendingCount: 'In Design',
     maintenanceCount: 'Maintenance',
     retiredCount: 'Retired',
