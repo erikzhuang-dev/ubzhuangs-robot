@@ -476,19 +476,19 @@ function MoldRow({
     <>
       {/* Main row */}
       <tr
-        className="border-t transition-colors hover:bg-gray-50/50"
+        className="cursor-pointer border-t transition-colors hover:bg-gray-50/50"
         style={{ borderColor: '#e0e8dc' }}
+        onClick={onToggle}
       >
         <td className="px-3 py-3">
-          <button
-            onClick={onToggle}
+          <span
             className="flex h-5 w-5 items-center justify-center rounded transition-transform duration-200"
             style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M4 2l4 4-4 4" stroke="#6b7c6b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          </button>
+          </span>
         </td>
         <td className="px-3 py-3 text-sm font-medium" style={{ color: '#2d3b2d' }}>
           {mold.code}
