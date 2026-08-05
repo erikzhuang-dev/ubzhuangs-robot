@@ -165,20 +165,8 @@ const RUNNER_MAP: Record<string, { zh: string; en: string }> = {
 };
 
 export default function Home() {
-  // Initialize molds from localStorage or fallback to INITIAL_MOLDS
-  const [molds, setMolds] = useState<Mold[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('molds');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          return INITIAL_MOLDS;
-        }
-      }
-    }
-    return INITIAL_MOLDS;
-  });
+  // Initialize molds from INITIAL_MOLDS (localStorage loaded in useEffect to avoid hydration mismatch)
+  const [molds, setMolds] = useState<Mold[]>(INITIAL_MOLDS);
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [factoryFilter, setFactoryFilter] = useState<string>('');
@@ -218,11 +206,21 @@ export default function Home() {
     projectNumber: '',
   });
 
+  // Load molds from localStorage on mount (client-side only to avoid hydration mismatch)
+  useEffect(() => {
+    const saved = localStorage.getItem('molds');
+    if (saved) {
+      try {
+        setMolds(JSON.parse(saved));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
   // Save molds to localStorage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('molds', JSON.stringify(molds));
-    }
+    localStorage.setItem('molds', JSON.stringify(molds));
   }, [molds]);
 
   const t = T[lang];
