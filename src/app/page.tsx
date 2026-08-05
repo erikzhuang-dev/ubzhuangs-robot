@@ -375,10 +375,11 @@ export default function Home() {
                 }}
               >
                 <div
-                  className="px-5 py-3 text-center text-sm font-semibold text-white"
+                  className="px-5 py-3 text-center text-white"
                   style={{ backgroundColor: '#a8d5a2' }}
                 >
-                  {bu.name}
+                  <div className="text-base font-bold">{bu.name.split('-')[0]}</div>
+                  <div className="text-xs font-medium opacity-90">{bu.name.split('-').slice(1).join('-')}</div>
                 </div>
                 <div className="flex items-center gap-4 px-5 py-4">
                   {/* Donut Chart */}
