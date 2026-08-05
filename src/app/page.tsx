@@ -378,7 +378,7 @@ export default function Home() {
                   className="px-5 py-3 text-center text-white"
                   style={{ backgroundColor: '#a8d5a2' }}
                 >
-                  <div className="text-base font-bold">{bu.name.split('-')[0]}</div>
+                  <div className="text-base font-bold" style={{ color: '#4a7c59' }}>{bu.name.split('-')[0]}</div>
                   <div className="text-xs font-medium opacity-90">{bu.name.split('-').slice(1).join('-')}</div>
                 </div>
                 <div className="flex items-center gap-4 px-5 py-4">
