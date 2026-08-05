@@ -1,10 +1,10 @@
 import type { BU, Product, Mold, Factory } from './types';
 
 export const BUS: BU[] = [
-  { id: 'bu1', name: 'BU1 注射器&针头', shortName: 'BU1' },
-  { id: 'bu2', name: 'BU2 采血针', shortName: 'BU2' },
-  { id: 'bu3', name: 'BU3 胰岛素注射器', shortName: 'BU3' },
-  { id: 'bu4', name: 'BU4 分血器', shortName: 'BU4' },
+  { id: 'bu1', name: 'BU1-Injection and Pharma Delivery', shortName: 'BU1' },
+  { id: 'bu2', name: 'BU2-Diagnostics', shortName: 'BU2' },
+  { id: 'bu3', name: 'BU3-Diabetes Care', shortName: 'BU3' },
+  { id: 'bu4', name: 'BU4-Vascular Access & Infusion Therapy', shortName: 'BU4' },
 ];
 
 export const FACTORIES: Factory[] = ['LD', 'PMM', 'Winner', 'KDL', 'ZJKDL'];

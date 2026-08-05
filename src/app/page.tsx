@@ -17,8 +17,8 @@ const T = {
     totalRecords: (n: number) => `共 ${n} 条`,
     exportExcel: '导出Excel',
     totalMolds: '模具总数',
-    avgOEE: '平均OEE',
-    avgLossRate: '平均损耗率',
+    activeCount: '使用中数量',
+    pendingCount: '设计中数量',
     // Table headers
     code: '模具编号',
     name: '模具名称',
@@ -75,8 +75,8 @@ const T = {
     totalRecords: (n: number) => `${n} records`,
     exportExcel: 'Export Excel',
     totalMolds: 'Total Molds',
-    avgOEE: 'Avg OEE',
-    avgLossRate: 'Avg Loss Rate',
+    activeCount: 'Active',
+    pendingCount: 'In Design',
     code: 'Mold Code',
     name: 'Mold Name',
     supplier: 'Supplier',
@@ -174,13 +174,9 @@ export default function Home() {
     return BUS.map((bu) => {
       const buMolds = molds.filter((m) => m.buId === bu.id);
       const totalMolds = buMolds.length;
-      const avgOEE = totalMolds > 0
-        ? buMolds.reduce((sum, m) => sum + m.oee, 0) / totalMolds
-        : 0;
-      const avgLossRate = totalMolds > 0
-        ? buMolds.reduce((sum, m) => sum + m.lossCoefficient, 0) / totalMolds
-        : 0;
-      return { buId: bu.id, totalMolds, avgOEE, avgLossRate };
+      const activeCount = buMolds.filter((m) => m.status === 'active').length;
+      const pendingCount = buMolds.filter((m) => m.status === 'pending').length;
+      return { buId: bu.id, totalMolds, activeCount, pendingCount };
     });
   }, [molds]);
 
@@ -266,21 +262,18 @@ export default function Home() {
                   </div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      {t.avgOEE}
+                      {t.activeCount}
                     </span>
-                    <span
-                      className="text-lg font-semibold"
-                      style={{ color: stats.avgOEE < 0.9 ? '#e74c3c' : '#4a7c59' }}
-                    >
-                      {(stats.avgOEE * 100).toFixed(1)}%
+                    <span className="text-lg font-semibold" style={{ color: '#4a7c59' }}>
+                      {stats.activeCount}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      {t.avgLossRate}
+                      {t.pendingCount}
                     </span>
                     <span className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
-                      {(stats.avgLossRate * 100).toFixed(1)}%
+                      {stats.pendingCount}
                     </span>
                   </div>
                 </div>
