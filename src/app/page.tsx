@@ -42,6 +42,8 @@ const T = {
     pending: '待启用',
     // Detail - left
     basicInfo: '基本信息',
+    moldCode: '模具编号',
+    projectNumber: '项目编号',
     detailName: '名称',
     detailSupplier: '供应商',
     belongBU: '所属BU',
@@ -110,6 +112,8 @@ const T = {
     retired: 'Retired',
     pending: 'Pending',
     basicInfo: 'Basic Info',
+    moldCode: 'Mold Code',
+    projectNumber: 'Project Number',
     detailName: 'Name',
     detailSupplier: 'Supplier',
     belongBU: 'Business Unit',
@@ -244,6 +248,14 @@ export default function Home() {
       prev.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, [field]: value };
+        // Auto-calculate hourly capacity when cavities or cycleTime changes
+        if (field === 'cavities' || field === 'cycleTime') {
+          const cavities = field === 'cavities' ? Number(value) : updated.cavities;
+          const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime;
+          if (cycleTime > 0) {
+            updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
+          }
+        }
         if (field === 'quantity' || field === 'unitPrice') {
           updated.totalPrice = updated.quantity * updated.unitPrice;
         }
@@ -257,6 +269,7 @@ export default function Home() {
     const L = lang;
     const exportData = filteredMolds.map((m) => ({
       [L === 'zh' ? '模具编号' : 'Mold Code']: m.code,
+      [L === 'zh' ? '项目编号' : 'Project Number']: m.projectNumber || '',
       [L === 'zh' ? '模具名称' : 'Mold Name']: L === 'zh' ? m.name : (m.nameEn || m.name),
       [L === 'zh' ? '供应商' : 'Supplier']: L === 'zh' ? m.supplier : (m.supplierEn || m.supplier),
       [L === 'zh' ? '工厂' : 'Factory']: m.factory,
@@ -296,6 +309,7 @@ export default function Home() {
     const mold: Mold = {
       id: `mold-${Date.now()}`,
       code: newCode,
+      projectNumber: newMold.projectNumber || '',
       name: newMold.name || '',
       nameEn: newMold.nameEn || '',
       supplier: newMold.supplier || '',
@@ -361,6 +375,14 @@ export default function Home() {
   const updateNewMold = useCallback((field: keyof Mold, value: unknown) => {
     setNewMold((prev) => {
       const updated = { ...prev, [field]: value };
+      // Auto-calculate hourly capacity when cavities or cycleTime changes
+      if (field === 'cavities' || field === 'cycleTime') {
+        const cavities = field === 'cavities' ? Number(value) : updated.cavities || 1;
+        const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime || 30;
+        if (cycleTime > 0) {
+          updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
+        }
+      }
       if (field === 'quantity' || field === 'unitPrice') {
         updated.totalPrice = (updated.quantity || 1) * (updated.unitPrice || 0);
       }
@@ -962,6 +984,22 @@ function MoldRow({
                     {t.basicInfo}
                   </h4>
                   <div className="space-y-3">
+                    <DetailField label={t.moldCode}>
+                      <input
+                        type="text"
+                        value={mold.code}
+                        onChange={(e) => onUpdate(mold.id, 'code', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
+                    <DetailField label={t.projectNumber}>
+                      <input
+                        type="text"
+                        value={mold.projectNumber || ''}
+                        onChange={(e) => onUpdate(mold.id, 'projectNumber', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
                     <DetailField label={t.detailName}>
                       <input
                         type="text"
@@ -1057,12 +1095,12 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <DetailField label={t.hourlyCapacity}>
-                      <input
-                        type="number"
-                        value={mold.hourlyCapacity}
-                        onChange={(e) => onUpdate(mold.id, 'hourlyCapacity', Number(e.target.value))}
-                        className="detail-input"
-                      />
+                      <div
+                        className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                        style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                      >
+                        {mold.hourlyCapacity} <span className="ml-1 text-xs">{t.capacityUnit}</span>
+                      </div>
                     </DetailField>
                     <DetailField label={t.oee}>
                       <input
@@ -1298,6 +1336,22 @@ function AddMoldModal({
                 {t.basicInfo}
               </h4>
               <div className="space-y-3">
+                <DetailField label={t.moldCode}>
+                  <input
+                    type="text"
+                    value={newMold.code || ''}
+                    onChange={(e) => onUpdate('code', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.projectNumber}>
+                  <input
+                    type="text"
+                    value={newMold.projectNumber || ''}
+                    onChange={(e) => onUpdate('projectNumber', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
                 <DetailField label={t.detailName}>
                   <input
                     type="text"
@@ -1406,12 +1460,12 @@ function AddMoldModal({
                   </DetailField>
                 </div>
                 <DetailField label={t.hourlyCapacity}>
-                  <input
-                    type="number"
-                    value={newMold.hourlyCapacity ?? 120}
-                    onChange={(e) => onUpdate('hourlyCapacity', Number(e.target.value))}
-                    className="detail-input"
-                  />
+                  <div
+                    className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                    style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                  >
+                    {newMold.hourlyCapacity ?? 120} <span className="ml-1 text-xs">{t.capacityUnit}</span>
+                  </div>
                 </DetailField>
                 <DetailField label={t.oee}>
                   <input

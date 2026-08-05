@@ -3,6 +3,7 @@
 export interface Mold {
   id: string;
   code: string;
+  projectNumber?: string;
   name: string;
   nameEn?: string;
   supplier: string;

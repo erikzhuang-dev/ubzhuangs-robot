@@ -98,6 +98,7 @@ function generateMolds(): Mold[] {
       const mold: Mold = {
         id: `m${String(moldIndex).padStart(3, '0')}`,
         code: `M${bu.id.toUpperCase().replace('BU', '')}-${String(moldIndex).padStart(4, '0')}`,
+        projectNumber: `PRJ-${String(Math.floor(rand() * 9000) + 1000)}`,
         name: `${product.name}模具-${String.fromCharCode(65 + (i % buProducts.length))}型`,
         nameEn: `${product.nameEn} Mold-Type ${String.fromCharCode(65 + (i % buProducts.length))}`,
         supplier: supplier.cn,
