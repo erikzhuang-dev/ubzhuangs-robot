@@ -19,6 +19,8 @@ const T = {
     totalMolds: '模具总数',
     activeCount: '使用中数量',
     pendingCount: '设计中数量',
+    maintenanceCount: '维护中数量',
+    retiredCount: '已报废数量',
     // Table headers
     code: '模具编号',
     name: '模具名称',
@@ -77,6 +79,8 @@ const T = {
     totalMolds: 'Total Molds',
     activeCount: 'Active',
     pendingCount: 'In Design',
+    maintenanceCount: 'Maintenance',
+    retiredCount: 'Retired',
     code: 'Mold Code',
     name: 'Mold Name',
     supplier: 'Supplier',
@@ -176,7 +180,9 @@ export default function Home() {
       const totalMolds = buMolds.length;
       const activeCount = buMolds.filter((m) => m.status === 'active').length;
       const pendingCount = buMolds.filter((m) => m.status === 'pending').length;
-      return { buId: bu.id, totalMolds, activeCount, pendingCount };
+      const maintenanceCount = buMolds.filter((m) => m.status === 'maintenance').length;
+      const retiredCount = buMolds.filter((m) => m.status === 'retired').length;
+      return { buId: bu.id, totalMolds, activeCount, pendingCount, maintenanceCount, retiredCount };
     });
   }, [molds]);
 
@@ -251,30 +257,44 @@ export default function Home() {
                 >
                   {bu.name}
                 </div>
-                <div className="px-5 py-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      {t.totalMolds}
-                    </span>
-                    <span className="text-xl font-bold" style={{ color: '#2d3b2d' }}>
-                      {stats.totalMolds}
-                    </span>
+                <div className="flex items-center gap-4 px-5 py-4">
+                  {/* Donut Chart */}
+                  <div className="flex-shrink-0">
+                    <DonutChart
+                      segments={[
+                        { value: stats.activeCount, color: '#4a7c59' },
+                        { value: stats.pendingCount, color: '#f39c12' },
+                        { value: stats.maintenanceCount, color: '#e74c3c' },
+                        { value: stats.retiredCount, color: '#95a5a6' },
+                      ]}
+                    />
                   </div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      {t.activeCount}
-                    </span>
-                    <span className="text-lg font-semibold" style={{ color: '#4a7c59' }}>
-                      {stats.activeCount}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: '#6b7c6b' }}>
-                      {t.pendingCount}
-                    </span>
-                    <span className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
-                      {stats.pendingCount}
-                    </span>
+                  {/* Stats */}
+                  <div className="flex-1">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>
+                        {t.totalMolds}
+                      </span>
+                      <span className="text-xl font-bold" style={{ color: '#2d3b2d' }}>
+                        {stats.totalMolds}
+                      </span>
+                    </div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>
+                        {t.activeCount}
+                      </span>
+                      <span className="text-lg font-semibold" style={{ color: '#4a7c59' }}>
+                        {stats.activeCount}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>
+                        {t.pendingCount}
+                      </span>
+                      <span className="text-lg font-semibold" style={{ color: '#f39c12' }}>
+                        {stats.pendingCount}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -750,5 +770,62 @@ function DetailField({ label, children }: { label: string; children: React.React
       </label>
       {children}
     </div>
+  );
+}
+
+// Donut Chart Component
+function DonutChart({
+  segments,
+  size = 90,
+  strokeWidth = 14,
+}: {
+  segments: { value: number; color: string }[];
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const total = segments.reduce((sum, s) => sum + s.value, 0);
+  if (total === 0) return null;
+
+  const arcs = segments
+    .filter((s) => s.value > 0)
+    .reduce<{ acc: number; result: Array<{ value: number; color: string; dashArray: string; dashOffset: number }> }>(
+      (prev, seg) => {
+        const dashLength = (seg.value / total) * circumference;
+        const dashOffset = -prev.acc;
+        return {
+          acc: prev.acc + dashLength,
+          result: [
+            ...prev.result,
+            {
+              ...seg,
+              dashArray: `${dashLength} ${circumference - dashLength}`,
+              dashOffset,
+            },
+          ],
+        };
+      },
+      { acc: 0, result: [] },
+    ).result;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {arcs.map((arc, i) => (
+        <circle
+          key={i}
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={arc.color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={arc.dashArray}
+          strokeDashoffset={arc.dashOffset}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: 'stroke-dasharray 0.3s ease' }}
+        />
+      ))}
+    </svg>
   );
 }
