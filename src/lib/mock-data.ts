@@ -105,6 +105,8 @@ function generateMolds(): Mold[] {
         factory: FACTORIES[Math.floor(rand() * FACTORIES.length)],
         buId: bu.id,
         productId: product.id,
+        productName: product.name,
+        productNameEn: product.nameEn,
         cavities,
         runnerType: RUNNER_TYPES[Math.floor(rand() * RUNNER_TYPES.length)],
         cycleTime,
