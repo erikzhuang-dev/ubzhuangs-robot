@@ -122,7 +122,7 @@ function generateMolds(): Mold[] {
         lossReason: lossCoeff !== 0.05 ? '特殊材料损耗调整' : undefined,
         lossReasonEn: lossCoeff !== 0.05 ? 'Special material loss adjustment' : undefined,
         material: MATERIALS[Math.floor(rand() * MATERIALS.length)],
-        materialLossCoefficient: Math.round((rand() * 0.08 + 0.01) * 100) / 100,
+        materialLossCoeff: Math.round((rand() * 0.08 + 0.01) * 100) / 100,
         productWeight: Math.round((rand() * 20 + 1) * 100) / 100,
         wasteWeight: Math.round((rand() * 5 + 0.1) * 100) / 100,
         status: STATUSES[Math.floor(rand() * STATUSES.length)],

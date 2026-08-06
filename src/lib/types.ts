@@ -27,7 +27,7 @@ export interface Mold {
   lossReason?: string;
   lossReasonEn?: string;
   material: string;
-  materialLossCoefficient: number;
+  materialLossCoeff?: number; // 材料损耗系数
   productWeight: number; // 产品单只克重
   wasteWeight: number; // 废料克重
   status: 'active' | 'maintenance' | 'retired' | 'pending';
@@ -43,6 +43,7 @@ export interface Product {
 export interface BU {
   id: string;
   name: string;
+  nameEn?: string;
   shortName: string;
 }
 

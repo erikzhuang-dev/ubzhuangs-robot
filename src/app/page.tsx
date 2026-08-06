@@ -199,7 +199,7 @@ export default function Home() {
     lossReason: '',
     lossReasonEn: '',
     material: '',
-    materialLossCoefficient: 0.02,
+    materialLossCoeff: 0.02,
     productWeight: 0,
     wasteWeight: 0,
     status: 'pending',
@@ -308,7 +308,7 @@ export default function Home() {
       [L === 'zh' ? '合计价格' : 'Total Price']: m.totalPrice,
       [L === 'zh' ? '模具损耗系数' : 'Mold Loss Coeff.']: m.lossCoefficient,
       [L === 'zh' ? '产品材料' : 'Material']: m.material,
-      [L === 'zh' ? '材料损耗系数' : 'Material Loss Coeff.']: m.materialLossCoefficient,
+      [L === 'zh' ? '材料损耗系数' : 'Material Loss Coeff.']: m.materialLossCoeff,
       [L === 'zh' ? '产品单只克重' : 'Product Weight(g)']: m.productWeight,
       [L === 'zh' ? '废料克重' : 'Waste Weight(g)']: m.wasteWeight,
     }));
@@ -352,7 +352,7 @@ export default function Home() {
       lossReason: newMold.lossReason || '',
       lossReasonEn: newMold.lossReasonEn || '',
       material: newMold.material || '',
-      materialLossCoefficient: newMold.materialLossCoefficient || 0.02,
+      materialLossCoeff: newMold.materialLossCoeff || 0.02,
       productWeight: newMold.productWeight || 0,
       wasteWeight: newMold.wasteWeight || 0,
       status: newMold.status || 'pending',
@@ -384,7 +384,7 @@ export default function Home() {
       lossReason: '',
       lossReasonEn: '',
       material: '',
-      materialLossCoefficient: 0.02,
+      materialLossCoeff: 0.02,
       productWeight: 0,
       wasteWeight: 0,
       status: 'pending',
@@ -573,6 +573,103 @@ export default function Home() {
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               {t.exportExcel}
+            </button>
+            {/* Import button */}
+            <button
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.xlsx,.xls';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    try {
+                      const data = ev.target?.result;
+                      const workbook = XLSX.read(data, { type: 'array' });
+                      const sheetName = workbook.SheetNames[0];
+                      const worksheet = workbook.Sheets[sheetName];
+                      const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
+
+                      const importedMolds: Mold[] = jsonData.map((row) => {
+                        const bu = BUS.find((b) => b.name === row['BU'] || b.nameEn === row['BU']);
+                        const product = PRODUCTS.find(
+                          (p) => p.name === row['Product'] || p.nameEn === row['Product']
+                        );
+                        const statusStr = String(row['Status'] || 'active').toLowerCase();
+                        const statusMap: Record<string, string> = {
+                          'in use': 'active',
+                          'active': 'active',
+                          'maintenance': 'maintenance',
+                          'retired': 'retired',
+                          'pending': 'pending',
+                          'in design': 'pending',
+                        };
+                        const unitPriceStr = String(row['Unit Price(含)'] || '0').replace(/[¥,]/g, '');
+                        return {
+                          id: String(row['ID'] || `M${Date.now()}`),
+                          code: String(row['Mold Code'] || ''),
+                          name: String(row['Mold Name'] || ''),
+                          nameEn: String(row['Mold Name'] || ''),
+                          supplier: String(row['Supplier'] || ''),
+                          supplierEn: String(row['Supplier'] || ''),
+                          buId: bu?.id || 'bu1',
+                          productId: product?.id || '',
+                          productName: product?.name || String(row['Product'] || ''),
+                          productNameEn: product?.nameEn || String(row['Product'] || ''),
+                          factory: String(row['Factory'] || ''),
+                          cavities: Number(row['Cavities'] || 1),
+                          runnerType: String(row['Runner Type'] || 'cold'),
+                          cycleTime: Number(row['Cycle Time(s)'] || 30),
+                          hourlyCapacity: Number(row['Hourly Output'] || 0),
+                          oee: Number(row['OEE'] || 0.9),
+                          oeeReason: String(row['OEE Reason'] || ''),
+                          oeeReasonEn: String(row['OEE Reason'] || ''),
+                          quantity: Number(row['Quantity'] || 0),
+                          unitPrice: Number(unitPriceStr) || 0,
+                          totalPrice: Number(row['Total Price'] || 0),
+                          lossCoefficient: Number(row['Loss Coefficient'] || 0.05),
+                          lossReason: String(row['Loss Reason'] || ''),
+                          lossReasonEn: String(row['Loss Reason'] || ''),
+                          material: String(row['Material'] || ''),
+                          materialLossCoeff: Number(row['Material Loss Coefficient'] || 0),
+                          productWeight: Number(row['Product Weight(g)'] || 0),
+                          scrapWeight: Number(row['Scrap Weight(g)'] || 0),
+                          wasteWeight: Number(row['Waste Weight(g)'] || 0),
+                          status: (statusMap[statusStr] || 'active') as Mold['status'],
+                          projectNumber: String(row['Project Number'] || ''),
+                        };
+                      });
+
+                      setMolds(importedMolds);
+                      alert(lang === 'zh' ? `成功导入 ${importedMolds.length} 条模具数据` : `Successfully imported ${importedMolds.length} molds`);
+                    } catch (err) {
+                      alert(lang === 'zh' ? '导入失败，请检查文件格式' : 'Import failed, please check the file format');
+                    }
+                  };
+                  reader.readAsArrayBuffer(file);
+                };
+                input.click();
+              }}
+              className="flex h-9 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              {lang === 'zh' ? '导入Excel' : 'Import Excel'}
             </button>
             {/* Analysis button */}
             <button
@@ -1219,8 +1316,8 @@ function MoldRow({
                         <input
                           type="number"
                           step="0.01"
-                          value={mold.materialLossCoefficient}
-                          onChange={(e) => onUpdate(mold.id, 'materialLossCoefficient', Number(e.target.value))}
+                          value={mold.materialLossCoeff}
+                          onChange={(e) => onUpdate(mold.id, 'materialLossCoeff', Number(e.target.value))}
                           className="detail-input"
                         />
                       </DetailField>
@@ -1584,8 +1681,8 @@ function AddMoldModal({
                     <input
                       type="number"
                       step="0.01"
-                      value={newMold.materialLossCoefficient ?? 0.02}
-                      onChange={(e) => onUpdate('materialLossCoefficient', Number(e.target.value))}
+                      value={newMold.materialLossCoeff ?? 0.02}
+                      onChange={(e) => onUpdate('materialLossCoeff', Number(e.target.value))}
                       className="detail-input"
                     />
                   </DetailField>
