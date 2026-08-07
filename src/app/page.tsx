@@ -36,7 +36,7 @@ const T = {
     unitPrice: '单价',
     noData: '暂无匹配的模具数据',
     // Status
-    active: 'In Use',
+    active: '在用',
     maintenance: '维护中',
     retired: '已报废',
     pending: '待启用',
