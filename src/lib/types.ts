@@ -30,6 +30,8 @@ export interface Mold {
   materialLossCoeff?: number; // 材料损耗系数
   productWeight: number; // 产品单只克重
   wasteWeight: number; // 废料克重
+  sprueWeight: number; // 水口料重量(g)
+  monthlyCapacity: number; // 月产能(万)
   status: 'active' | 'maintenance' | 'retired' | 'pending';
 }
 

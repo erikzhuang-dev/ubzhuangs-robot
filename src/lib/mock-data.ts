@@ -125,8 +125,11 @@ function generateMolds(): Mold[] {
         materialLossCoeff: Math.round((rand() * 0.08 + 0.01) * 100) / 100,
         productWeight: Math.round((rand() * 20 + 1) * 100) / 100,
         wasteWeight: Math.round((rand() * 5 + 0.1) * 100) / 100,
+        sprueWeight: Math.round((rand() * 3 + 0.05) * 100) / 100,
+        monthlyCapacity: 0, // 由 hourlyCapacity 自动计算
         status: STATUSES[Math.floor(rand() * STATUSES.length)],
       };
+      mold.monthlyCapacity = Math.round(mold.hourlyCapacity * 24 * 30 / 10000 * 100) / 100;
       molds.push(mold);
       moldIndex++;
     }

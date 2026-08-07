@@ -67,6 +67,8 @@ const T = {
     materialLossCoeff: '材料损耗系数',
     productWeight: '产品单只克重',
     wasteWeight: '废料克重',
+    sprueWeight: '水口料重量(g)',
+    monthlyCapacity: '月产能(万)',
     // Runner types
     hotRunner: '热流道',
     coldRunner: '冷流道',
@@ -136,6 +138,8 @@ const T = {
     materialLossCoeff: 'Material Loss Coeff.',
     productWeight: 'Product Weight(g)',
     wasteWeight: 'Waste Weight(g)',
+    sprueWeight: 'Sprue Weight(g)',
+    monthlyCapacity: 'Monthly Capacity(10k)',
     hotRunner: 'Hot Runner',
     coldRunner: 'Cold Runner',
     semiHotRunner: 'Semi-Hot Runner',
@@ -202,6 +206,8 @@ export default function Home() {
     materialLossCoeff: 0.02,
     productWeight: 0,
     wasteWeight: 0,
+    sprueWeight: 0,
+    monthlyCapacity: 0,
     status: 'pending',
     projectNumber: '',
   });
@@ -273,7 +279,12 @@ export default function Home() {
           const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime;
           if (cycleTime > 0) {
             updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
+            updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 30 / 10000 * 100) / 100;
           }
+        }
+        if (field === 'hourlyCapacity') {
+          const hc = Number(value);
+          updated.monthlyCapacity = Math.round(hc * 24 * 30 / 10000 * 100) / 100;
         }
         if (field === 'quantity' || field === 'unitPrice') {
           updated.totalPrice = updated.quantity * updated.unitPrice;
@@ -311,6 +322,8 @@ export default function Home() {
       [L === 'zh' ? '材料损耗系数' : 'Material Loss Coeff.']: m.materialLossCoeff,
       [L === 'zh' ? '产品单只克重' : 'Product Weight(g)']: m.productWeight,
       [L === 'zh' ? '废料克重' : 'Waste Weight(g)']: m.wasteWeight,
+      [L === 'zh' ? '水口料重量(g)' : 'Sprue Weight(g)']: m.sprueWeight,
+      [L === 'zh' ? '月产能(万)' : 'Monthly Capacity(10k)']: m.monthlyCapacity,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -355,6 +368,8 @@ export default function Home() {
       materialLossCoeff: newMold.materialLossCoeff || 0.02,
       productWeight: newMold.productWeight || 0,
       wasteWeight: newMold.wasteWeight || 0,
+      sprueWeight: newMold.sprueWeight || 0,
+      monthlyCapacity: newMold.monthlyCapacity || 0,
       status: newMold.status || 'pending',
     };
     setMolds((prev) => [...prev, mold]);
@@ -387,6 +402,8 @@ export default function Home() {
       materialLossCoeff: 0.02,
       productWeight: 0,
       wasteWeight: 0,
+      sprueWeight: 0,
+      monthlyCapacity: 0,
       status: 'pending',
     });
   }, [molds, newMold]);
@@ -400,7 +417,12 @@ export default function Home() {
         const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime || 30;
         if (cycleTime > 0) {
           updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
+          updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 30 / 10000 * 100) / 100;
         }
+      }
+      if (field === 'hourlyCapacity') {
+        const hc = Number(value);
+        updated.monthlyCapacity = Math.round(hc * 24 * 30 / 10000 * 100) / 100;
       }
       if (field === 'quantity' || field === 'unitPrice') {
         updated.totalPrice = (updated.quantity || 1) * (updated.unitPrice || 0);
@@ -637,6 +659,8 @@ export default function Home() {
                           productWeight: Number(row['Product Weight(g)'] || 0),
                           scrapWeight: Number(row['Scrap Weight(g)'] || 0),
                           wasteWeight: Number(row['Waste Weight(g)'] || 0),
+                          sprueWeight: Number(row['Sprue Weight(g)'] || 0),
+                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || ''),
                         };
@@ -1342,6 +1366,25 @@ function MoldRow({
                         />
                       </DetailField>
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailField label={t.sprueWeight}>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={mold.sprueWeight}
+                          onChange={(e) => onUpdate(mold.id, 'sprueWeight', Number(e.target.value))}
+                          className="detail-input"
+                        />
+                      </DetailField>
+                      <DetailField label={t.monthlyCapacity}>
+                        <div
+                          className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                          style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                        >
+                          {mold.monthlyCapacity} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
+                        </div>
+                      </DetailField>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1705,6 +1748,25 @@ function AddMoldModal({
                       onChange={(e) => onUpdate('wasteWeight', Number(e.target.value))}
                       className="detail-input"
                     />
+                  </DetailField>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailField label={t.sprueWeight}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newMold.sprueWeight ?? 0}
+                      onChange={(e) => onUpdate('sprueWeight', Number(e.target.value))}
+                      className="detail-input"
+                    />
+                  </DetailField>
+                  <DetailField label={t.monthlyCapacity}>
+                    <div
+                      className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                      style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                    >
+                      {newMold.monthlyCapacity ?? 0} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
+                    </div>
                   </DetailField>
                 </div>
               </div>
