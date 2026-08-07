@@ -1257,7 +1257,7 @@ function MoldRow({
                           <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
                           <input
                             type="number"
-                            value={mold.moldLength}
+                            value={mold.moldLength ?? 0}
                             onChange={(e) => onUpdate(mold.id, 'moldLength', Number(e.target.value))}
                             className="detail-input"
                           />
@@ -1266,7 +1266,7 @@ function MoldRow({
                           <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
                           <input
                             type="number"
-                            value={mold.moldWidth}
+                            value={mold.moldWidth ?? 0}
                             onChange={(e) => onUpdate(mold.id, 'moldWidth', Number(e.target.value))}
                             className="detail-input"
                           />
@@ -1275,7 +1275,7 @@ function MoldRow({
                           <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
                           <input
                             type="number"
-                            value={mold.moldThickness}
+                            value={mold.moldThickness ?? 0}
                             onChange={(e) => onUpdate(mold.id, 'moldThickness', Number(e.target.value))}
                             className="detail-input"
                           />
@@ -1446,7 +1446,7 @@ function MoldRow({
                         <input
                           type="number"
                           step="0.01"
-                          value={mold.sprueWeight}
+                          value={mold.sprueWeight ?? 0}
                           onChange={(e) => onUpdate(mold.id, 'sprueWeight', Number(e.target.value))}
                           className="detail-input"
                         />
@@ -1456,7 +1456,7 @@ function MoldRow({
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
                         >
-                          {mold.monthlyCapacity} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
+                          {mold.monthlyCapacity ?? 0} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
                         </div>
                       </DetailField>
                     </div>
