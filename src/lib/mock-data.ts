@@ -111,7 +111,7 @@ function generateMolds(): Mold[] {
         cavities,
         runnerType: RUNNER_TYPES[Math.floor(rand() * RUNNER_TYPES.length)],
         cycleTime,
-        hourlyCapacity: Math.round(cavities * (3600 / cycleTime)),
+        hourlyCapacity: Math.round(cavities * (3600 / cycleTime) * oee),
         oee,
         oeeReason: oee < 0.9 ? '设备老化导致效率下降' : undefined,
         oeeReasonEn: oee < 0.9 ? 'Equipment aging causes efficiency decline' : undefined,
@@ -129,7 +129,7 @@ function generateMolds(): Mold[] {
         monthlyCapacity: 0, // 由 hourlyCapacity 自动计算
         status: STATUSES[Math.floor(rand() * STATUSES.length)],
       };
-      mold.monthlyCapacity = Math.round(mold.hourlyCapacity * 24 * 30 / 10000 * 100) / 100;
+      mold.monthlyCapacity = Math.round(mold.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
       molds.push(mold);
       moldIndex++;
     }

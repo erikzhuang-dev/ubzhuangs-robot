@@ -278,13 +278,18 @@ export default function Home() {
           const cavities = field === 'cavities' ? Number(value) : updated.cavities;
           const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime;
           if (cycleTime > 0) {
-            updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
-            updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 30 / 10000 * 100) / 100;
+            updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60 * updated.oee);
+            updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
           }
         }
         if (field === 'hourlyCapacity') {
           const hc = Number(value);
-          updated.monthlyCapacity = Math.round(hc * 24 * 30 / 10000 * 100) / 100;
+          updated.monthlyCapacity = Math.round(hc * 24 * 25 / 10000 * 100) / 100;
+        }
+        if (field === 'oee') {
+          const oee = Number(value);
+          updated.hourlyCapacity = Math.round(updated.cavities * (60 / updated.cycleTime) * 60 * oee);
+          updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
         }
         if (field === 'quantity' || field === 'unitPrice') {
           updated.totalPrice = updated.quantity * updated.unitPrice;
@@ -416,13 +421,18 @@ export default function Home() {
         const cavities = field === 'cavities' ? Number(value) : updated.cavities || 1;
         const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime || 30;
         if (cycleTime > 0) {
-          updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60);
-          updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 30 / 10000 * 100) / 100;
+          updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60 * (updated.oee || 0.9));
+          updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
         }
       }
       if (field === 'hourlyCapacity') {
         const hc = Number(value);
-        updated.monthlyCapacity = Math.round(hc * 24 * 30 / 10000 * 100) / 100;
+        updated.monthlyCapacity = Math.round(hc * 24 * 25 / 10000 * 100) / 100;
+      }
+      if (field === 'oee') {
+        const oee = Number(value);
+        updated.hourlyCapacity = Math.round((updated.cavities || 1) * (60 / (updated.cycleTime || 30)) * 60 * oee);
+        updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
       }
       if (field === 'quantity' || field === 'unitPrice') {
         updated.totalPrice = (updated.quantity || 1) * (updated.unitPrice || 0);
