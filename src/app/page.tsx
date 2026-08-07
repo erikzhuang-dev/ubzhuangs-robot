@@ -73,6 +73,7 @@ const T = {
     moldLength: '长',
     moldWidth: '宽',
     moldThickness: '厚',
+    location: '所在地',
     // Runner types
     hotRunner: '热流道',
     coldRunner: '冷流道',
@@ -148,6 +149,7 @@ const T = {
     moldLength: 'Length',
     moldWidth: 'Width',
     moldThickness: 'Thickness',
+    location: 'Location',
     hotRunner: 'Hot Runner',
     coldRunner: 'Cold Runner',
     semiHotRunner: 'Semi-Hot Runner',
@@ -219,6 +221,7 @@ export default function Home() {
     moldLength: 0,
     moldWidth: 0,
     moldThickness: 0,
+    location: '',
     status: 'pending',
     projectNumber: '',
   });
@@ -236,6 +239,7 @@ export default function Home() {
           moldLength: m.moldLength ?? 0,
           moldWidth: m.moldWidth ?? 0,
           moldThickness: m.moldThickness ?? 0,
+          location: m.location ?? '',
           hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
           monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
         }));
@@ -354,6 +358,7 @@ export default function Home() {
       [L === 'zh' ? '模具长(mm)' : 'Mold Length(mm)']: m.moldLength,
       [L === 'zh' ? '模具宽(mm)' : 'Mold Width(mm)']: m.moldWidth,
       [L === 'zh' ? '模具厚(mm)' : 'Mold Thickness(mm)']: m.moldThickness,
+      [L === 'zh' ? '所在地' : 'Location']: m.location,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -403,6 +408,7 @@ export default function Home() {
       moldLength: newMold.moldLength || 0,
       moldWidth: newMold.moldWidth || 0,
       moldThickness: newMold.moldThickness || 0,
+      location: newMold.location || '',
       status: newMold.status || 'pending',
     };
     setMolds((prev) => [...prev, mold]);
@@ -440,6 +446,7 @@ export default function Home() {
       moldLength: 0,
       moldWidth: 0,
       moldThickness: 0,
+      location: '',
       status: 'pending',
     });
   }, [molds, newMold]);
@@ -705,6 +712,7 @@ export default function Home() {
                           moldLength: Number(row['Mold Length(mm)'] || 0),
                           moldWidth: Number(row['Mold Width(mm)'] || 0),
                           moldThickness: Number(row['Mold Thickness(mm)'] || 0),
+                          location: String(row['Location'] || ''),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || ''),
                         };
@@ -1282,6 +1290,14 @@ function MoldRow({
                         </div>
                       </div>
                     </DetailField>
+                    <DetailField label={t.location}>
+                      <input
+                        type="text"
+                        value={mold.location ?? ''}
+                        onChange={(e) => onUpdate(mold.id, 'location', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
                   </div>
                 </div>
 
@@ -1696,6 +1712,14 @@ function AddMoldModal({
                       />
                     </div>
                   </div>
+                </DetailField>
+                <DetailField label={t.location}>
+                  <input
+                    type="text"
+                    value={newMold.location ?? ''}
+                    onChange={(e) => onUpdate('location', e.target.value)}
+                    className="detail-input"
+                  />
                 </DetailField>
               </div>
             </div>

@@ -67,6 +67,7 @@ const SUPPLIERS = [
 const RUNNER_TYPES = ['热流道', '冷流道', '半热流道', '针阀式热流道'];
 const MATERIALS = ['PP', 'PE', 'PC', 'ABS', 'PS', 'PVC', 'PMMA', 'POM', 'PA66', 'PBT'];
 const STATUSES: Mold['status'][] = ['active', 'active', 'active', 'active', 'maintenance', 'retired', 'pending'];
+const LOCATIONS = ['苏州', '昆山', '东莞', '深圳', '宁波', '常州', '上海', '无锡', '台州', '厦门'];
 
 function seededRandom(seed: number): () => number {
   let s = seed;
@@ -130,6 +131,7 @@ function generateMolds(): Mold[] {
         moldLength: Math.round(rand() * 500 + 300),
         moldWidth: Math.round(rand() * 400 + 200),
         moldThickness: Math.round(rand() * 200 + 100),
+        location: LOCATIONS[Math.floor(rand() * LOCATIONS.length)],
         status: STATUSES[Math.floor(rand() * STATUSES.length)],
       };
       mold.monthlyCapacity = Math.round(mold.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;

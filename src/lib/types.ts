@@ -35,6 +35,7 @@ export interface Mold {
   moldLength: number; // 模具尺寸-长(mm)
   moldWidth: number; // 模具尺寸-宽(mm)
   moldThickness: number; // 模具尺寸-厚(mm)
+  location: string; // 所在地
   status: 'active' | 'maintenance' | 'retired' | 'pending';
 }
 
