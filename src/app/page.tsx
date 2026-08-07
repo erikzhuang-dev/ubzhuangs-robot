@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { BUS, FACTORIES, PRODUCTS, INITIAL_MOLDS } from '@/lib/mock-data';
-import type { Mold } from '@/lib/types';
+import { BUS, INITIAL_MOLDS } from '@/lib/mock-data';
+import {
+  getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers,
+} from '@/lib/config-store';
+import type { Mold, Product } from '@/lib/types';
 import * as XLSX from 'xlsx';
 
 type Lang = 'zh' | 'en';
@@ -169,7 +172,7 @@ const STATUS_COLOR: Record<Mold['status'], string> = {
   pending: 'bg-blue-100 text-blue-700',
 };
 
-const RUNNER_MAP: Record<string, { zh: string; en: string }> = {
+const RUNNER_NAME_MAP: Record<string, { zh: string; en: string }> = {
   '热流道': { zh: '热流道', en: 'Hot Runner' },
   '冷流道': { zh: '冷流道', en: 'Cold Runner' },
   '半热流道': { zh: '半热流道', en: 'Semi-Hot Runner' },
@@ -223,6 +226,14 @@ export default function Home() {
     projectNumber: '',
   });
 
+  // Configurable lists from admin panel
+  const [factories, setFactories] = useState<string[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [runnerTypes, setRunnerTypes] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [suppliers, setSuppliers] = useState<{ cn: string; en: string }[]>([]);
+
   // Load molds from localStorage on mount (client-side only to avoid hydration mismatch)
   useEffect(() => {
     const saved = localStorage.getItem('molds');
@@ -245,6 +256,13 @@ export default function Home() {
         // Ignore parse errors
       }
     }
+    // Load configurable lists
+    setFactories(getFactories());
+    setProducts(getProducts());
+    setRunnerTypes(getRunnerTypes());
+    setMaterials(getMaterials());
+    setLocations(getLocations());
+    setSuppliers(getSuppliers());
   }, []);
 
   // Save molds to localStorage whenever they change
@@ -332,11 +350,11 @@ export default function Home() {
       [L === 'zh' ? '工厂' : 'Factory']: m.factory,
       [L === 'zh' ? '所属BU' : 'Business Unit']: BUS.find((b) => b.id === m.buId)?.name || '',
       [L === 'zh' ? '所属产品' : 'Product']: (() => {
-        const p = PRODUCTS.find((pp) => pp.id === m.productId);
+        const p = products.find((pp) => pp.id === m.productId);
         return L === 'zh' ? (p?.name || '') : (p?.nameEn || p?.name || '');
       })(),
       [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
-      [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_MAP[m.runnerType]?.[L] || m.runnerType,
+      [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_NAME_MAP[m.runnerType]?.[L] || m.runnerType,
       [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
       [L === 'zh' ? '每小时产能' : 'Hourly Output']: m.hourlyCapacity,
       'OEE': m.oee,
@@ -360,7 +378,7 @@ export default function Home() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, t.sheetName);
     XLSX.writeFile(wb, `${t.sheetName}.xlsx`);
-  }, [filteredMolds, lang, t.sheetName]);
+  }, [filteredMolds, lang, t.sheetName, products]);
 
   // Add new mold
   const handleAddMold = useCallback(() => {
@@ -573,7 +591,7 @@ export default function Home() {
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             >
               <option value="">{t.allFactories}</option>
-              {FACTORIES.map((f) => (
+              {factories.map((f) => (
                 <option key={f} value={f}>
                   {f}
                 </option>
@@ -646,7 +664,7 @@ export default function Home() {
 
                       const importedMolds: Mold[] = jsonData.map((row) => {
                         const bu = BUS.find((b) => b.name === row['BU'] || b.nameEn === row['BU']);
-                        const product = PRODUCTS.find(
+                        const product = products.find(
                           (p) => p.name === row['Product'] || p.nameEn === row['Product']
                         );
                         const statusStr = String(row['Status'] || 'active').toLowerCase();
@@ -751,6 +769,27 @@ export default function Home() {
               </svg>
               {t.analysis}
             </button>
+            {/* Admin button */}
+            <a
+              href="/admin"
+              className="flex h-9 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#e0e8dc', color: '#4a7c59' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              {lang === 'zh' ? '后台管理' : 'Admin'}
+            </a>
             {/* Language toggle */}
             <button
               onClick={() => setLang((prev) => (prev === 'zh' ? 'en' : 'zh'))}
@@ -809,6 +848,12 @@ export default function Home() {
                     onToggle={() => setExpandedRow(isExpanded ? null : mold.id)}
                     onUpdate={updateMold}
                     lang={lang}
+                    products={products}
+                    factories={factories}
+                    runnerTypes={runnerTypes}
+                    materials={materials}
+                    locations={locations}
+                    suppliers={suppliers}
                   />
                 );
               })}
@@ -829,6 +874,12 @@ export default function Home() {
             onSave={handleAddMold}
             onCancel={() => setShowAddModal(false)}
             lang={lang}
+            products={products}
+            factories={factories}
+            runnerTypes={runnerTypes}
+            materials={materials}
+            locations={locations}
+            suppliers={suppliers}
           />
         )}
 
@@ -1083,6 +1134,12 @@ function MoldRow({
   onToggle,
   onUpdate,
   lang,
+  products,
+  factories,
+  runnerTypes,
+  materials,
+  locations,
+  suppliers,
 }: {
   mold: Mold;
   isExpanded: boolean;
@@ -1091,6 +1148,12 @@ function MoldRow({
   onToggle: () => void;
   onUpdate: (id: string, field: keyof Mold, value: unknown) => void;
   lang: Lang;
+  products: Product[];
+  factories: string[];
+  runnerTypes: string[];
+  materials: string[];
+  locations: string[];
+  suppliers: { cn: string; en: string }[];
 }) {
   const t = T[lang];
   const totalPrice = mold.quantity * mold.unitPrice;
@@ -1209,7 +1272,7 @@ function MoldRow({
                         onChange={(e) => onUpdate(mold.id, 'productId', e.target.value)}
                         className="detail-input"
                       >
-                        {PRODUCTS.filter((p) => p.buId === mold.buId).map((p) => (
+                        {products.filter((p) => p.buId === mold.buId).map((p) => (
                           <option key={p.id} value={p.id}>
                             {lang === 'en' ? (p.nameEn || p.name) : p.name}
                           </option>
@@ -1222,7 +1285,7 @@ function MoldRow({
                         onChange={(e) => onUpdate(mold.id, 'factory', e.target.value)}
                         className="detail-input"
                       >
-                        {FACTORIES.map((f) => (
+                        {factories.map((f) => (
                           <option key={f} value={f}>
                             {f}
                           </option>
@@ -1545,12 +1608,24 @@ function AddMoldModal({
   onSave,
   onCancel,
   lang,
+  products,
+  factories,
+  runnerTypes,
+  materials,
+  locations,
+  suppliers,
 }: {
   newMold: Partial<Mold>;
   onUpdate: (field: keyof Mold, value: unknown) => void;
   onSave: () => void;
   onCancel: () => void;
   lang: Lang;
+  products: Product[];
+  factories: string[];
+  runnerTypes: string[];
+  materials: string[];
+  locations: string[];
+  suppliers: { cn: string; en: string }[];
 }) {
   const t = T[lang];
   const totalPrice = (newMold.quantity || 1) * (newMold.unitPrice || 0);
@@ -1619,7 +1694,7 @@ function AddMoldModal({
                       const buId = e.target.value;
                       onUpdate('buId', buId);
                       // Reset product when BU changes
-                      const buProducts = PRODUCTS.filter((p) => p.buId === buId);
+                      const buProducts = products.filter((p) => p.buId === buId);
                       onUpdate('productId', buProducts[0]?.id || '');
                     }}
                     className="detail-input"
@@ -1645,7 +1720,7 @@ function AddMoldModal({
                     onChange={(e) => onUpdate('factory', e.target.value)}
                     className="detail-input"
                   >
-                    {FACTORIES.map((f) => (
+                    {factories.map((f) => (
                       <option key={f} value={f}>
                         {f}
                       </option>

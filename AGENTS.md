@@ -16,10 +16,13 @@ src/
 ├── app/
 │   ├── layout.tsx          # 根布局
 │   ├── page.tsx            # 主页面（所有组件集中于此）
+│   ├── admin/
+│   │   └── page.tsx        # 后台管理页面（工厂/产品/流道/材料/所在地/供应商配置）
 │   └── globals.css         # 全局样式 + detail-input 样式
 ├── lib/
 │   ├── types.ts            # 类型定义（Mold, Product, BU, Factory）
-│   ├── mock-data.ts        # 模拟数据（4BU, 5工厂, 30产品, ~180模具）
+│   ├── mock-data.ts        # 模拟数据（4BU, 5工厂, 30产品, 40模具）
+│   ├── config-store.ts     # 配置数据持久化（localStorage读写工厂/产品等列表）
 │   └── utils.ts            # 通用工具函数
 └── components/ui/          # shadcn/ui 组件库
 ```
