@@ -69,6 +69,10 @@ const T = {
     wasteWeight: '废料克重',
     sprueWeight: '水口料重量(g)',
     monthlyCapacity: '月产能(万)',
+    moldSize: '模具尺寸(mm)',
+    moldLength: '长',
+    moldWidth: '宽',
+    moldThickness: '厚',
     // Runner types
     hotRunner: '热流道',
     coldRunner: '冷流道',
@@ -140,6 +144,10 @@ const T = {
     wasteWeight: 'Waste Weight(g)',
     sprueWeight: 'Sprue Weight(g)',
     monthlyCapacity: 'Monthly Capacity(10k)',
+    moldSize: 'Mold Size(mm)',
+    moldLength: 'Length',
+    moldWidth: 'Width',
+    moldThickness: 'Thickness',
     hotRunner: 'Hot Runner',
     coldRunner: 'Cold Runner',
     semiHotRunner: 'Semi-Hot Runner',
@@ -208,6 +216,9 @@ export default function Home() {
     wasteWeight: 0,
     sprueWeight: 0,
     monthlyCapacity: 0,
+    moldLength: 0,
+    moldWidth: 0,
+    moldThickness: 0,
     status: 'pending',
     projectNumber: '',
   });
@@ -222,6 +233,9 @@ export default function Home() {
         const recalculated = parsed.map((m: Mold) => ({
           ...m,
           sprueWeight: m.sprueWeight ?? 0,
+          moldLength: m.moldLength ?? 0,
+          moldWidth: m.moldWidth ?? 0,
+          moldThickness: m.moldThickness ?? 0,
           hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
           monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
         }));
@@ -337,6 +351,9 @@ export default function Home() {
       [L === 'zh' ? '废料克重' : 'Waste Weight(g)']: m.wasteWeight,
       [L === 'zh' ? '水口料重量(g)' : 'Sprue Weight(g)']: m.sprueWeight,
       [L === 'zh' ? '月产能(万)' : 'Monthly Capacity(10k)']: m.monthlyCapacity,
+      [L === 'zh' ? '模具长(mm)' : 'Mold Length(mm)']: m.moldLength,
+      [L === 'zh' ? '模具宽(mm)' : 'Mold Width(mm)']: m.moldWidth,
+      [L === 'zh' ? '模具厚(mm)' : 'Mold Thickness(mm)']: m.moldThickness,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -383,6 +400,9 @@ export default function Home() {
       wasteWeight: newMold.wasteWeight || 0,
       sprueWeight: newMold.sprueWeight || 0,
       monthlyCapacity: newMold.monthlyCapacity || 0,
+      moldLength: newMold.moldLength || 0,
+      moldWidth: newMold.moldWidth || 0,
+      moldThickness: newMold.moldThickness || 0,
       status: newMold.status || 'pending',
     };
     setMolds((prev) => [...prev, mold]);
@@ -417,6 +437,9 @@ export default function Home() {
       wasteWeight: 0,
       sprueWeight: 0,
       monthlyCapacity: 0,
+      moldLength: 0,
+      moldWidth: 0,
+      moldThickness: 0,
       status: 'pending',
     });
   }, [molds, newMold]);
@@ -679,6 +702,9 @@ export default function Home() {
                           wasteWeight: Number(row['Waste Weight(g)'] || 0),
                           sprueWeight: Number(row['Sprue Weight(g)'] || 0),
                           monthlyCapacity: Number(row['Monthly Capacity(10k)'] || 0),
+                          moldLength: Number(row['Mold Length(mm)'] || 0),
+                          moldWidth: Number(row['Mold Width(mm)'] || 0),
+                          moldThickness: Number(row['Mold Thickness(mm)'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || ''),
                         };
@@ -1403,6 +1429,37 @@ function MoldRow({
                         </div>
                       </DetailField>
                     </div>
+                    <DetailField label={t.moldSize}>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
+                          <input
+                            type="number"
+                            value={mold.moldLength}
+                            onChange={(e) => onUpdate(mold.id, 'moldLength', Number(e.target.value))}
+                            className="detail-input"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
+                          <input
+                            type="number"
+                            value={mold.moldWidth}
+                            onChange={(e) => onUpdate(mold.id, 'moldWidth', Number(e.target.value))}
+                            className="detail-input"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
+                          <input
+                            type="number"
+                            value={mold.moldThickness}
+                            onChange={(e) => onUpdate(mold.id, 'moldThickness', Number(e.target.value))}
+                            className="detail-input"
+                          />
+                        </div>
+                      </div>
+                    </DetailField>
                   </div>
                 </div>
               </div>
@@ -1787,6 +1844,37 @@ function AddMoldModal({
                     </div>
                   </DetailField>
                 </div>
+                <DetailField label={t.moldSize}>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
+                      <input
+                        type="number"
+                        value={newMold.moldLength ?? 0}
+                        onChange={(e) => onUpdate('moldLength', Number(e.target.value))}
+                        className="detail-input"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
+                      <input
+                        type="number"
+                        value={newMold.moldWidth ?? 0}
+                        onChange={(e) => onUpdate('moldWidth', Number(e.target.value))}
+                        className="detail-input"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
+                      <input
+                        type="number"
+                        value={newMold.moldThickness ?? 0}
+                        onChange={(e) => onUpdate('moldThickness', Number(e.target.value))}
+                        className="detail-input"
+                      />
+                    </div>
+                  </div>
+                </DetailField>
               </div>
             </div>
           </div>

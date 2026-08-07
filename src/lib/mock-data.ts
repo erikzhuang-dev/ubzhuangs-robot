@@ -127,6 +127,9 @@ function generateMolds(): Mold[] {
         wasteWeight: Math.round((rand() * 5 + 0.1) * 100) / 100,
         sprueWeight: Math.round((rand() * 3 + 0.05) * 100) / 100,
         monthlyCapacity: 0, // 由 hourlyCapacity 自动计算
+        moldLength: Math.round(rand() * 500 + 300),
+        moldWidth: Math.round(rand() * 400 + 200),
+        moldThickness: Math.round(rand() * 200 + 100),
         status: STATUSES[Math.floor(rand() * STATUSES.length)],
       };
       mold.monthlyCapacity = Math.round(mold.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;

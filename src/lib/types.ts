@@ -32,6 +32,9 @@ export interface Mold {
   wasteWeight: number; // 废料克重
   sprueWeight: number; // 水口料重量(g)
   monthlyCapacity: number; // 月产能(万)
+  moldLength: number; // 模具尺寸-长(mm)
+  moldWidth: number; // 模具尺寸-宽(mm)
+  moldThickness: number; // 模具尺寸-厚(mm)
   status: 'active' | 'maintenance' | 'retired' | 'pending';
 }
 
