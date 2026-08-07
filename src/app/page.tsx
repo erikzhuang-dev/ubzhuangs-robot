@@ -217,7 +217,15 @@ export default function Home() {
     const saved = localStorage.getItem('molds');
     if (saved) {
       try {
-        setMolds(JSON.parse(saved));
+        const parsed = JSON.parse(saved) as Mold[];
+        // Recalculate hourlyCapacity and monthlyCapacity with current formulas
+        const recalculated = parsed.map((m: Mold) => ({
+          ...m,
+          sprueWeight: m.sprueWeight ?? 0,
+          hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
+          monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
+        }));
+        setMolds(recalculated);
       } catch {
         // Ignore parse errors
       }
