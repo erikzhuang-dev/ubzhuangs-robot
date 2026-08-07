@@ -1251,6 +1251,37 @@ function MoldRow({
                         <option value="pending">{t.pending}</option>
                       </select>
                     </DetailField>
+                    <DetailField label={t.moldSize}>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
+                          <input
+                            type="number"
+                            value={mold.moldLength}
+                            onChange={(e) => onUpdate(mold.id, 'moldLength', Number(e.target.value))}
+                            className="detail-input"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
+                          <input
+                            type="number"
+                            value={mold.moldWidth}
+                            onChange={(e) => onUpdate(mold.id, 'moldWidth', Number(e.target.value))}
+                            className="detail-input"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
+                          <input
+                            type="number"
+                            value={mold.moldThickness}
+                            onChange={(e) => onUpdate(mold.id, 'moldThickness', Number(e.target.value))}
+                            className="detail-input"
+                          />
+                        </div>
+                      </div>
+                    </DetailField>
                   </div>
                 </div>
 
@@ -1429,37 +1460,6 @@ function MoldRow({
                         </div>
                       </DetailField>
                     </div>
-                    <DetailField label={t.moldSize}>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
-                          <input
-                            type="number"
-                            value={mold.moldLength}
-                            onChange={(e) => onUpdate(mold.id, 'moldLength', Number(e.target.value))}
-                            className="detail-input"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
-                          <input
-                            type="number"
-                            value={mold.moldWidth}
-                            onChange={(e) => onUpdate(mold.id, 'moldWidth', Number(e.target.value))}
-                            className="detail-input"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
-                          <input
-                            type="number"
-                            value={mold.moldThickness}
-                            onChange={(e) => onUpdate(mold.id, 'moldThickness', Number(e.target.value))}
-                            className="detail-input"
-                          />
-                        </div>
-                      </div>
-                    </DetailField>
                   </div>
                 </div>
               </div>
@@ -1666,6 +1666,37 @@ function AddMoldModal({
                     <option value="pending">{t.pending}</option>
                   </select>
                 </DetailField>
+                <DetailField label={t.moldSize}>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
+                      <input
+                        type="number"
+                        value={newMold.moldLength ?? 0}
+                        onChange={(e) => onUpdate('moldLength', Number(e.target.value))}
+                        className="detail-input"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
+                      <input
+                        type="number"
+                        value={newMold.moldWidth ?? 0}
+                        onChange={(e) => onUpdate('moldWidth', Number(e.target.value))}
+                        className="detail-input"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
+                      <input
+                        type="number"
+                        value={newMold.moldThickness ?? 0}
+                        onChange={(e) => onUpdate('moldThickness', Number(e.target.value))}
+                        className="detail-input"
+                      />
+                    </div>
+                  </div>
+                </DetailField>
               </div>
             </div>
 
@@ -1844,37 +1875,6 @@ function AddMoldModal({
                     </div>
                   </DetailField>
                 </div>
-                <DetailField label={t.moldSize}>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
-                      <input
-                        type="number"
-                        value={newMold.moldLength ?? 0}
-                        onChange={(e) => onUpdate('moldLength', Number(e.target.value))}
-                        className="detail-input"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldWidth}</span>
-                      <input
-                        type="number"
-                        value={newMold.moldWidth ?? 0}
-                        onChange={(e) => onUpdate('moldWidth', Number(e.target.value))}
-                        className="detail-input"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldThickness}</span>
-                      <input
-                        type="number"
-                        value={newMold.moldThickness ?? 0}
-                        onChange={(e) => onUpdate('moldThickness', Number(e.target.value))}
-                        className="detail-input"
-                      />
-                    </div>
-                  </div>
-                </DetailField>
               </div>
             </div>
           </div>
