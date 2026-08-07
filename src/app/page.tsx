@@ -13,7 +13,6 @@ const T = {
     title: '模具列表',
     searchPlaceholder: '搜索模具名称/供应商/编号...',
     allFactories: '全部工厂',
-    allBU: '全部BU',
     totalRecords: (n: number) => `共 ${n} 条`,
     exportExcel: '导出Excel',
     addMold: '添加',
@@ -93,7 +92,6 @@ const T = {
     title: 'Mold List',
     searchPlaceholder: 'Search name / supplier / code...',
     allFactories: 'All Factories',
-    allBU: 'All BU',
     totalRecords: (n: number) => `${n} records`,
     exportExcel: 'Export Excel',
     addMold: 'Add',
@@ -184,7 +182,6 @@ export default function Home() {
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [factoryFilter, setFactoryFilter] = useState<string>('');
-  const [buFilter, setBuFilter] = useState<string>('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>('en');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -266,7 +263,6 @@ export default function Home() {
   const filteredMolds = useMemo(() => {
     return molds.filter((m) => {
       if (selectedBU && m.buId !== selectedBU) return false;
-      if (buFilter && m.buId !== buFilter) return false;
       if (factoryFilter && m.factory !== factoryFilter) return false;
       if (searchText) {
         const s = searchText.toLowerCase();
@@ -278,7 +274,7 @@ export default function Home() {
       }
       return true;
     });
-  }, [molds, selectedBU, buFilter, factoryFilter, searchText]);
+  }, [molds, selectedBU, factoryFilter, searchText]);
 
   // BU stats
   const buStats = useMemo(() => {
@@ -580,20 +576,6 @@ export default function Home() {
               {FACTORIES.map((f) => (
                 <option key={f} value={f}>
                   {f}
-                </option>
-              ))}
-            </select>
-            {/* BU filter */}
-            <select
-              value={buFilter}
-              onChange={(e) => setBuFilter(e.target.value)}
-              className="h-9 rounded-lg border px-3 text-sm outline-none"
-              style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
-            >
-              <option value="">{t.allBU}</option>
-              {BUS.map((bu) => (
-                <option key={bu.id} value={bu.id}>
-                  {bu.shortName}
                 </option>
               ))}
             </select>
