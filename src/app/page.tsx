@@ -7,6 +7,7 @@ import {
 } from '@/lib/config-store';
 import type { Mold, Product } from '@/lib/types';
 import * as XLSX from 'xlsx';
+import Analysis from '@/components/Analysis';
 
 type Lang = 'zh' | 'en';
 
@@ -189,6 +190,7 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>('en');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [view, setView] = useState<'main' | 'analysis'>('main');
   const [newMold, setNewMold] = useState<Partial<Mold>>({
     name: '',
     nameEn: '',
@@ -493,8 +495,54 @@ export default function Home() {
     });
   }, []);
 
+  if (view === 'analysis') {
+    return (
+      <Analysis
+        molds={molds}
+        products={products}
+        factories={factories}
+        lang={lang}
+        onBack={() => setView('main')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#dce8d0' }}>
+      {/* Top Navigation Bar */}
+      <div className="bg-white border-b" style={{ borderColor: '#e0e8dc', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+        <div className="mx-auto max-w-[1400px] px-6 flex items-center justify-between h-14">
+          <div className="flex items-center gap-1">
+            <button
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ backgroundColor: '#e8f5e9', color: '#4a7c59' }}
+            >
+              {lang === 'zh' ? '模具列表' : 'Mold List'}
+            </button>
+            <button
+              onClick={() => setView('analysis')}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: '#6b7c6b' }}
+            >
+              {lang === 'zh' ? '数据分析' : 'Analysis'}
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLang('zh')}
+              className={`text-xs px-2 py-1 rounded ${lang === 'zh' ? 'font-bold' : ''}`}
+              style={{ color: lang === 'zh' ? '#4a7c59' : '#6b7c6b' }}
+            >中文</button>
+            <span style={{ color: '#e0e8dc' }}>|</span>
+            <button
+              onClick={() => setLang('en')}
+              className={`text-xs px-2 py-1 rounded ${lang === 'en' ? 'font-bold' : ''}`}
+              style={{ color: lang === 'en' ? '#4a7c59' : '#6b7c6b' }}
+            >EN</button>
+          </div>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-[1400px] px-6 py-6">
         {/* BU Cards */}
         <div className="mb-6 grid grid-cols-4 gap-4">
@@ -749,7 +797,7 @@ export default function Home() {
             </button>
             {/* Analysis button */}
             <button
-              onClick={() => setShowAnalysisModal(true)}
+              onClick={() => setView('analysis')}
               className="flex h-9 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
               style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
             >
@@ -790,29 +838,6 @@ export default function Home() {
               </svg>
               {lang === 'zh' ? '后台管理' : 'Admin'}
             </a>
-            {/* Language toggle */}
-            <button
-              onClick={() => setLang((prev) => (prev === 'zh' ? 'en' : 'zh'))}
-              className="flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-gray-50"
-              style={{ borderColor: '#e0e8dc', color: '#4a7c59' }}
-              title={lang === 'zh' ? 'Switch to English' : '切换为中文'}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-              {lang === 'zh' ? 'EN' : '中'}
-            </button>
           </div>
         </div>
 
