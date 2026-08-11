@@ -48,6 +48,7 @@ const translations = {
     errorMsg: 'Invalid username or password',
     placeholderUser: 'Enter username',
     placeholderPass: 'Enter password',
+    timeoutMsg: 'Session expired. Please log in again.',
   },
   zh: {
     title: '后台管理',
@@ -80,6 +81,7 @@ const translations = {
     errorMsg: '用户名或密码错误',
     placeholderUser: '请输入用户名',
     placeholderPass: '请输入密码',
+    timeoutMsg: '登录已超时，请重新登录',
   },
 };
 
@@ -102,11 +104,21 @@ export default function AdminPage() {
   const [loginPass, setLoginPass] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginChecked, setLoginChecked] = useState(false);
+  const [timeoutMsg, setTimeoutMsg] = useState('');
 
+  // Check login + timeout on mount
   useEffect(() => {
     const stored = sessionStorage.getItem('admin_logged_in');
-    if (stored === 'true') {
-      setLoggedIn(true);
+    const lastActivity = sessionStorage.getItem('admin_last_activity');
+    if (stored === 'true' && lastActivity) {
+      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      if (elapsed > 20 * 60 * 1000) {
+        sessionStorage.removeItem('admin_logged_in');
+        sessionStorage.removeItem('admin_last_activity');
+        setTimeoutMsg(translations[lang].timeoutMsg);
+      } else {
+        setLoggedIn(true);
+      }
     }
     setLoginChecked(true);
   }, []);
@@ -114,8 +126,10 @@ export default function AdminPage() {
   const handleLogin = () => {
     if (loginUser === 'admin' && loginPass === '123456') {
       sessionStorage.setItem('admin_logged_in', 'true');
+      sessionStorage.setItem('admin_last_activity', Date.now().toString());
       setLoggedIn(true);
       setLoginError('');
+      setTimeoutMsg('');
     } else {
       setLoginError(t.errorMsg);
     }
@@ -123,9 +137,11 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_logged_in');
+    sessionStorage.removeItem('admin_last_activity');
     setLoggedIn(false);
     setLoginUser('');
     setLoginPass('');
+    setTimeoutMsg('');
   };
 
   const handleLoginKeyDown = (e: React.KeyboardEvent) => {
@@ -145,6 +161,44 @@ export default function AdminPage() {
     }
   }, [loggedIn]);
 
+  // Auto-logout after 20 minutes of inactivity
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    const updateActivity = () => {
+      sessionStorage.setItem('admin_last_activity', Date.now().toString());
+    };
+
+    // Update on user activity
+    window.addEventListener('click', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('scroll', updateActivity);
+    window.addEventListener('mousemove', updateActivity);
+
+    // Check every 30 seconds
+    const interval = setInterval(() => {
+      const lastActivity = sessionStorage.getItem('admin_last_activity');
+      if (lastActivity) {
+        const elapsed = Date.now() - parseInt(lastActivity, 10);
+        if (elapsed > 20 * 60 * 1000) {
+          sessionStorage.removeItem('admin_logged_in');
+          sessionStorage.removeItem('admin_last_activity');
+          setLoggedIn(false);
+          setTimeoutMsg(translations[lang].timeoutMsg);
+          clearInterval(interval);
+        }
+      }
+    }, 30000);
+
+    return () => {
+      window.removeEventListener('click', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
+      window.removeEventListener('mousemove', updateActivity);
+      clearInterval(interval);
+    };
+  }, [loggedIn, lang]);
+
   if (!loginChecked) return null;
 
   if (!loggedIn) {
@@ -163,12 +217,17 @@ export default function AdminPage() {
           </div>
 
           <div className="space-y-4">
+            {timeoutMsg && (
+              <div className="rounded-lg border px-4 py-3 text-sm font-medium" style={{ borderColor: '#f39c12', backgroundColor: '#fef9e7', color: '#b45309' }}>
+                {timeoutMsg}
+              </div>
+            )}
             <div>
               <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>{t.username}</label>
               <input
                 type="text"
                 value={loginUser}
-                onChange={(e) => { setLoginUser(e.target.value); setLoginError(''); }}
+                onChange={(e) => { setLoginUser(e.target.value); setLoginError(''); setTimeoutMsg(''); }}
                 onKeyDown={handleLoginKeyDown}
                 placeholder={t.placeholderUser}
                 className="w-full h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
@@ -180,7 +239,7 @@ export default function AdminPage() {
               <input
                 type="password"
                 value={loginPass}
-                onChange={(e) => { setLoginPass(e.target.value); setLoginError(''); }}
+                onChange={(e) => { setLoginPass(e.target.value); setLoginError(''); setTimeoutMsg(''); }}
                 onKeyDown={handleLoginKeyDown}
                 placeholder={t.placeholderPass}
                 className="w-full h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
