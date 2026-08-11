@@ -14,18 +14,64 @@ import {
 import type { Product } from '@/lib/types';
 
 type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers';
+type Lang = 'en' | 'zh';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'factories', label: '工厂' },
-  { key: 'products', label: '产品' },
-  { key: 'runners', label: '流道类型' },
-  { key: 'materials', label: '产品材料' },
-  { key: 'locations', label: '所在地' },
-  { key: 'suppliers', label: '供应商' },
-];
+const translations = {
+  en: {
+    title: 'Admin Panel',
+    subtitle: 'Manage dropdown options. Changes take effect after saving.',
+    unsaved: 'Unsaved changes',
+    save: 'Save',
+    back: 'Back to Home',
+    factories: 'Factories',
+    products: 'Products',
+    runners: 'Runner Types',
+    materials: 'Materials',
+    locations: 'Locations',
+    suppliers: 'Suppliers',
+    factoryList: 'Factory List',
+    productList: 'Product List',
+    runnerList: 'Runner Type List',
+    materialList: 'Material List',
+    locationList: 'Location List',
+    supplierList: 'Supplier List',
+    add: '+ Add',
+    chineseName: 'Chinese Name',
+    englishName: 'English Name',
+    empty: 'No data. Click "+ Add" to create.',
+    bu: 'BU',
+  },
+  zh: {
+    title: '后台管理',
+    subtitle: '管理下拉选项配置，修改后点击保存生效',
+    unsaved: '有未保存的更改',
+    save: '保存',
+    back: '返回首页',
+    factories: '工厂',
+    products: '产品',
+    runners: '流道类型',
+    materials: '产品材料',
+    locations: '所在地',
+    suppliers: '供应商',
+    factoryList: '工厂列表',
+    productList: '产品列表',
+    runnerList: '流道类型列表',
+    materialList: '产品材料列表',
+    locationList: '所在地列表',
+    supplierList: '供应商列表',
+    add: '+ 添加',
+    chineseName: '中文名',
+    englishName: '英文名',
+    empty: '暂无数据，点击"+ 添加"新增',
+    bu: 'BU',
+  },
+};
+
+const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers'];
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('factories');
+  const [lang, setLang] = useState<Lang>('en');
   const [factories, setFactoriesState] = useState<string[]>([]);
   const [products, setProductsState] = useState<Product[]>([]);
   const [runnerTypes, setRunnerTypesState] = useState<string[]>([]);
@@ -33,6 +79,8 @@ export default function AdminPage() {
   const [locations, setLocationsState] = useState<string[]>([]);
   const [suppliers, setSuppliersState] = useState<{ cn: string; en: string }[]>([]);
   const [saved, setSaved] = useState(true);
+
+  const t = translations[lang];
 
   useEffect(() => {
     setFactoriesState(getFactories());
@@ -77,12 +125,19 @@ export default function AdminPage() {
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold" style={{ color: '#2d3b2d' }}>后台管理</h1>
-            <p className="mt-0.5 text-xs" style={{ color: '#6b7c6b' }}>管理下拉选项配置，修改后点击保存生效</p>
+            <h1 className="text-xl font-bold" style={{ color: '#2d3b2d' }}>{t.title}</h1>
+            <p className="mt-0.5 text-xs" style={{ color: '#6b7c6b' }}>{t.subtitle}</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
+              className="flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#e0e8dc', color: '#4a7c59' }}
+            >
+              {lang === 'zh' ? 'EN' : '中文'}
+            </button>
             {!saved && (
-              <span className="text-xs font-medium text-orange-500">有未保存的更改</span>
+              <span className="text-xs font-medium text-orange-500">{t.unsaved}</span>
             )}
             <button
               onClick={handleSave}
@@ -90,32 +145,32 @@ export default function AdminPage() {
               className="h-9 rounded-lg px-4 text-sm font-medium transition-colors disabled:opacity-40"
               style={{ backgroundColor: saved ? '#ccc' : '#4a7c59', color: saved ? '#999' : '#fff' }}
             >
-              保存
+              {t.save}
             </button>
             <Link
               href="/"
               className="flex h-9 items-center rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
               style={{ borderColor: '#e0e8dc', color: '#4a7c59' }}
             >
-              返回首页
+              {t.back}
             </Link>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="mb-4 flex gap-2 overflow-x-auto">
-          {TABS.map((t) => (
+          {TABS.map((key) => (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={key}
+              onClick={() => setTab(key)}
               className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors"
               style={{
-                backgroundColor: tab === t.key ? '#4a7c59' : '#fff',
-                color: tab === t.key ? '#fff' : '#2d3b2d',
-                border: tab === t.key ? 'none' : '1px solid #e0e8dc',
+                backgroundColor: tab === key ? '#4a7c59' : '#fff',
+                color: tab === key ? '#fff' : '#2d3b2d',
+                border: tab === key ? 'none' : '1px solid #e0e8dc',
               }}
             >
-              {t.label}
+              {t[key]}
             </button>
           ))}
         </div>
@@ -124,7 +179,8 @@ export default function AdminPage() {
         <div className="rounded-2xl bg-white p-6" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
           {tab === 'factories' && (
             <StringList
-              title="工厂列表"
+              title={t.factoryList}
+              lang={lang}
               items={factories}
               onAdd={() => addItem(factories, setFactoriesState)}
               onUpdate={(i, v) => updateItem(factories, setFactoriesState, i, v)}
@@ -133,13 +189,15 @@ export default function AdminPage() {
           )}
           {tab === 'products' && (
             <ProductList
+              lang={lang}
               items={products}
               onChange={(v) => { setProductsState(v); markDirty(); }}
             />
           )}
           {tab === 'runners' && (
             <StringList
-              title="流道类型列表"
+              title={t.runnerList}
+              lang={lang}
               items={runnerTypes}
               onAdd={() => addItem(runnerTypes, setRunnerTypesState)}
               onUpdate={(i, v) => updateItem(runnerTypes, setRunnerTypesState, i, v)}
@@ -148,7 +206,8 @@ export default function AdminPage() {
           )}
           {tab === 'materials' && (
             <StringList
-              title="产品材料列表"
+              title={t.materialList}
+              lang={lang}
               items={materials}
               onAdd={() => addItem(materials, setMaterialsState)}
               onUpdate={(i, v) => updateItem(materials, setMaterialsState, i, v)}
@@ -157,7 +216,8 @@ export default function AdminPage() {
           )}
           {tab === 'locations' && (
             <StringList
-              title="所在地列表"
+              title={t.locationList}
+              lang={lang}
               items={locations}
               onAdd={() => addItem(locations, setLocationsState)}
               onUpdate={(i, v) => updateItem(locations, setLocationsState, i, v)}
@@ -166,6 +226,7 @@ export default function AdminPage() {
           )}
           {tab === 'suppliers' && (
             <SupplierList
+              lang={lang}
               items={suppliers}
               onChange={(v) => { setSuppliersState(v); markDirty(); }}
             />
@@ -179,17 +240,20 @@ export default function AdminPage() {
 // ── Simple string list ──
 function StringList({
   title,
+  lang,
   items,
   onAdd,
   onUpdate,
   onRemove,
 }: {
   title: string;
+  lang: Lang;
   items: string[];
   onAdd: () => void;
   onUpdate: (idx: number, val: string) => void;
   onRemove: (idx: number) => void;
 }) {
+  const t = translations[lang];
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -199,7 +263,7 @@ function StringList({
           className="flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: '#4a7c59' }}
         >
-          + 添加
+          {t.add}
         </button>
       </div>
       <div className="space-y-2">
@@ -223,7 +287,7 @@ function StringList({
           </div>
         ))}
         {items.length === 0 && (
-          <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>暂无数据，点击"添加"新增</div>
+          <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>{t.empty}</div>
         )}
       </div>
     </div>
@@ -232,12 +296,15 @@ function StringList({
 
 // ── Product list (with BU) ──
 function ProductList({
+  lang,
   items,
   onChange,
 }: {
+  lang: Lang;
   items: Product[];
   onChange: (v: Product[]) => void;
 }) {
+  const t = translations[lang];
   const add = () => {
     onChange([...items, { id: `p${Date.now()}`, name: '', nameEn: '', buId: BUS[0].id }]);
   };
@@ -251,13 +318,13 @@ function ProductList({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>产品列表</h3>
+        <h3 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.productList}</h3>
         <button
           onClick={add}
           className="flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: '#4a7c59' }}
         >
-          + 添加
+          {t.add}
         </button>
       </div>
       <div className="space-y-2">
@@ -265,7 +332,7 @@ function ProductList({
           <div key={p.id || idx} className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="中文名"
+              placeholder={t.chineseName}
               value={p.name}
               onChange={(e) => update(idx, 'name', e.target.value)}
               className="flex-1 h-9 rounded-lg border px-3 text-sm outline-none"
@@ -273,7 +340,7 @@ function ProductList({
             />
             <input
               type="text"
-              placeholder="English name"
+              placeholder={t.englishName}
               value={p.nameEn || ''}
               onChange={(e) => update(idx, 'nameEn', e.target.value)}
               className="flex-1 h-9 rounded-lg border px-3 text-sm outline-none"
@@ -300,7 +367,7 @@ function ProductList({
           </div>
         ))}
         {items.length === 0 && (
-          <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>暂无数据，点击"添加"新增</div>
+          <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>{t.empty}</div>
         )}
       </div>
     </div>
@@ -309,12 +376,15 @@ function ProductList({
 
 // ── Supplier list (cn + en) ──
 function SupplierList({
+  lang,
   items,
   onChange,
 }: {
+  lang: Lang;
   items: { cn: string; en: string }[];
   onChange: (v: { cn: string; en: string }[]) => void;
 }) {
+  const t = translations[lang];
   const add = () => onChange([...items, { cn: '', en: '' }]);
   const update = (idx: number, field: 'cn' | 'en', val: string) => {
     const next = [...items];
@@ -326,13 +396,13 @@ function SupplierList({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>供应商列表</h3>
+        <h3 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.supplierList}</h3>
         <button
           onClick={add}
           className="flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: '#4a7c59' }}
         >
-          + 添加
+          {t.add}
         </button>
       </div>
       <div className="space-y-2">
@@ -340,7 +410,7 @@ function SupplierList({
           <div key={idx} className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="中文名"
+              placeholder={t.chineseName}
               value={s.cn}
               onChange={(e) => update(idx, 'cn', e.target.value)}
               className="flex-1 h-9 rounded-lg border px-3 text-sm outline-none"
@@ -348,7 +418,7 @@ function SupplierList({
             />
             <input
               type="text"
-              placeholder="English name"
+              placeholder={t.englishName}
               value={s.en}
               onChange={(e) => update(idx, 'en', e.target.value)}
               className="flex-1 h-9 rounded-lg border px-3 text-sm outline-none"
@@ -365,7 +435,7 @@ function SupplierList({
           </div>
         ))}
         {items.length === 0 && (
-          <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>暂无数据，点击"添加"新增</div>
+          <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>{t.empty}</div>
         )}
       </div>
     </div>
