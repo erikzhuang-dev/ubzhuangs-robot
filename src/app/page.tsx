@@ -98,6 +98,9 @@ const T = {
     确认修改状态信息: '确认将此模具的状态从',
     修改为: '修改为',
     确认: '确认',
+    oeeValidationTitle: 'OEE校验',
+    oeeValidationMsg: 'OEE低于0.9，必须填写原因后才能保存',
+    oeeValidationOk: '确定',
   },
   en: {
     title: 'Mold List',
@@ -175,6 +178,9 @@ const T = {
     confirmStatusTitle: 'Confirm Status Change',
     confirmStatusMsg: 'Confirm changing status from',
     to: 'to',
+    oeeValidationTitle: 'OEE Validation',
+    oeeValidationMsg: 'OEE is below 0.9, the reason must be filled in before saving',
+    oeeValidationOk: 'OK',
   },
 } as const;
 
@@ -211,6 +217,7 @@ export default function Home() {
     oldLabel: string;
     newLabel: string;
   } | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [newMold, setNewMold] = useState<Partial<Mold>>({
     name: '',
     nameEn: '',
@@ -859,6 +866,7 @@ export default function Home() {
                     onConfirmChange={(moldId, field, oldValue, newValue, oldLabel, newLabel) => {
                       setConfirmDialog({ moldId, field, oldValue, newValue, oldLabel, newLabel });
                     }}
+                    onOEEValidationAlert={() => setAlertMessage(lang === 'zh' ? 'OEE低于0.9，必须填写原因后才能保存' : 'OEE is below 0.9, the reason must be filled in before saving')}
                     lang={lang}
                     products={products}
                     factories={factories}
@@ -920,6 +928,14 @@ export default function Home() {
             lang={lang}
           />
         )}
+        {/* OEE Validation Alert Dialog */}
+        {alertMessage && (
+          <AlertDialog
+            message={alertMessage}
+            onClose={() => setAlertMessage(null)}
+            lang={lang}
+          />
+        )}
       </div>
     </div>
   );
@@ -978,6 +994,57 @@ function ConfirmDialog({
             style={{ backgroundColor: '#4a7c59' }}
           >
             {lang === 'zh' ? '确认' : 'Confirm'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Alert Dialog Component (for OEE validation)
+function AlertDialog({
+  message,
+  onClose,
+  lang,
+}: {
+  message: string;
+  onClose: () => void;
+  lang: Lang;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        style={{ borderRadius: '20px' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-2 flex items-center gap-3">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ backgroundColor: '#fde8e8' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3 className="text-base font-semibold" style={{ color: '#2d3b2d' }}>
+            {lang === 'zh' ? 'OEE校验' : 'OEE Validation'}
+          </h3>
+        </div>
+        <p className="mb-6 text-sm leading-relaxed" style={{ color: '#4a5568' }}>{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            {lang === 'zh' ? '确定' : 'OK'}
           </button>
         </div>
       </div>
@@ -1223,6 +1290,7 @@ function MoldRow({
   onToggle,
   onUpdate,
   onConfirmChange,
+  onOEEValidationAlert,
   lang,
   products,
   factories,
@@ -1238,6 +1306,7 @@ function MoldRow({
   onToggle: () => void;
   onUpdate: (id: string, field: keyof Mold, value: unknown) => void;
   onConfirmChange: (moldId: string, field: 'factory' | 'status', oldValue: string, newValue: string, oldLabel: string, newLabel: string) => void;
+  onOEEValidationAlert: () => void;
   lang: Lang;
   products: Product[];
   factories: string[];
@@ -1504,7 +1573,14 @@ function MoldRow({
                         min="0"
                         max="1"
                         value={mold.oee}
-                        onChange={(e) => onUpdate(mold.id, 'oee', Number(e.target.value))}
+                        onChange={(e) => {
+                          const newOee = Number(e.target.value);
+                          if (newOee < 0.9 && !mold.oeeReason && !mold.oeeReasonEn) {
+                            onOEEValidationAlert();
+                            return;
+                          }
+                          onUpdate(mold.id, 'oee', newOee);
+                        }}
                         className="detail-input"
                         style={{
                           borderColor: mold.oee < 0.9 ? '#e74c3c' : '#e0e8dc',
