@@ -41,7 +41,7 @@ const T = {
     active: '在用',
     maintenance: '维护中',
     retired: '已报废',
-    pending: '待启用',
+    pending: '设计中',
     // Detail - left
     basicInfo: '基本信息',
     moldCode: '模具编号',
@@ -118,7 +118,7 @@ const T = {
     active: 'In Use',
     maintenance: 'Maintenance',
     retired: 'Retired',
-    pending: 'Pending',
+    pending: 'In Design',
     basicInfo: 'Basic Info',
     moldCode: 'Mold Code',
     projectNumber: 'Project Number',

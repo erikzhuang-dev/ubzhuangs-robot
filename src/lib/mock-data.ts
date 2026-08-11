@@ -82,15 +82,15 @@ function generateMolds(): Mold[] {
   const rand = seededRandom(42);
   let moldIndex = 1;
 
-  // 每个BU生成10个模具
-  const moldsPerBu = 10;
+  // 每个BU生成约45个模具，共约180个
+  const moldsPerBu = 45;
   for (const bu of BUS) {
     const buProducts = PRODUCTS.filter(p => p.buId === bu.id);
     for (let i = 0; i < moldsPerBu; i++) {
       const product = buProducts[i % buProducts.length];
       const cavities = [1, 2, 4, 8, 12, 16, 24, 32][Math.floor(rand() * 8)];
       const cycleTime = Math.floor(rand() * 40) + 10; // 10-50s
-      const oee = Math.round((rand() * 0.3 + 0.75) * 100) / 100; // 0.75-1.05
+      const oee = Math.round((rand() * 0.38 + 0.60) * 100) / 100; // 0.60-0.98
       const quantity = Math.floor(rand() * 5) + 1;
       const unitPrice = Math.round((rand() * 150000 + 50000) * 100) / 100;
       const lossCoeff = rand() < 0.7 ? 0.05 : Math.round((rand() * 0.1 + 0.02) * 100) / 100;
