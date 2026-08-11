@@ -387,11 +387,13 @@ export default function Home() {
       [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
       [L === 'zh' ? '每小时产能' : 'Hourly Output']: m.hourlyCapacity,
       'OEE': m.oee,
+      [L === 'zh' ? 'OEE原因' : 'OEE Reason']: m.oeeReason || '',
       [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
       [L === 'zh' ? '数量' : 'Quantity']: m.quantity,
       [L === 'zh' ? '单价' : 'Unit Price']: m.unitPrice,
       [L === 'zh' ? '合计价格' : 'Total Price']: m.totalPrice,
       [L === 'zh' ? '模具损耗系数' : 'Mold Loss Coeff.']: m.lossCoefficient,
+      [L === 'zh' ? '损耗原因' : 'Loss Reason']: m.lossReason || '',
       [L === 'zh' ? '产品材料' : 'Material']: m.material,
       [L === 'zh' ? '材料损耗系数' : 'Material Loss Coeff.']: m.materialLossCoeff,
       [L === 'zh' ? '产品单只克重' : 'Product Weight(g)']: m.productWeight,
@@ -768,7 +770,7 @@ export default function Home() {
                           'pending': 'pending',
                           'in design': 'pending',
                         };
-                        const unitPriceStr = String(row['Unit Price(含)'] || '0').replace(/[¥,]/g, '');
+                        const unitPriceStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
                         return {
                           id: String(row['ID'] || `M${Date.now()}`),
                           code: String(row['Mold Code'] || ''),
@@ -790,12 +792,12 @@ export default function Home() {
                           oeeReasonEn: String(row['OEE Reason'] || ''),
                           quantity: Number(row['Quantity'] || 0),
                           unitPrice: Number(unitPriceStr) || 0,
-                          totalPrice: Number(row['Total Price'] || 0),
-                          lossCoefficient: Number(row['Loss Coefficient'] || 0.05),
+                          totalPrice: Number(row['Quantity'] || 0) * (Number(unitPriceStr) || 0),
+                          lossCoefficient: Number(row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
                           lossReason: String(row['Loss Reason'] || ''),
                           lossReasonEn: String(row['Loss Reason'] || ''),
                           material: String(row['Material'] || ''),
-                          materialLossCoeff: Number(row['Material Loss Coefficient'] || 0),
+                          materialLossCoeff: Number(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'] ?? 0),
                           productWeight: Number(row['Product Weight(g)'] || 0),
                           scrapWeight: Number(row['Scrap Weight(g)'] || 0),
                           wasteWeight: Number(row['Waste Weight(g)'] || 0),
