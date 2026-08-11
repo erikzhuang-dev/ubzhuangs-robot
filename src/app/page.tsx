@@ -745,7 +745,17 @@ export default function Home() {
                       const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
 
                       const importedMolds: Mold[] = jsonData.map((row) => {
-                        const bu = BUS.find((b) => b.name === row['BU'] || b.nameEn === row['BU']);
+                        const buValue = String(row['Business Unit'] || row['所属BU'] || row['BU'] || '');
+                        let bu = BUS.find((b) => b.name === buValue || b.nameEn === buValue);
+                        if (!bu) {
+                          const buPrefix = buValue.match(/BU\d/)?.[0]?.toLowerCase();
+                          bu = BUS.find((b) => b.id === buPrefix || b.shortName.toLowerCase() === buPrefix);
+                        }
+                        const code = String(row['Mold Code'] || '');
+                        if (!bu) {
+                          const codePrefix = code.match(/M(\d)/)?.[1];
+                          bu = BUS.find((b) => b.id === `bu${codePrefix}`);
+                        }
                         const product = products.find(
                           (p) => p.name === row['Product'] || p.nameEn === row['Product']
                         );
