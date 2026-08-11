@@ -23,6 +23,7 @@ const translations = {
     unsaved: 'Unsaved changes',
     save: 'Save',
     back: 'Back to Home',
+    logout: 'Logout',
     factories: 'Factories',
     products: 'Products',
     runners: 'Runner Types',
@@ -40,6 +41,13 @@ const translations = {
     englishName: 'English Name',
     empty: 'No data. Click "+ Add" to create.',
     bu: 'BU',
+    loginTitle: 'Admin Login',
+    username: 'Username',
+    password: 'Password',
+    loginBtn: 'Login',
+    errorMsg: 'Invalid username or password',
+    placeholderUser: 'Enter username',
+    placeholderPass: 'Enter password',
   },
   zh: {
     title: '后台管理',
@@ -47,6 +55,7 @@ const translations = {
     unsaved: '有未保存的更改',
     save: '保存',
     back: '返回首页',
+    logout: '退出登录',
     factories: '工厂',
     products: '产品',
     runners: '流道类型',
@@ -64,6 +73,13 @@ const translations = {
     englishName: '英文名',
     empty: '暂无数据，点击"+ 添加"新增',
     bu: 'BU',
+    loginTitle: '后台管理登录',
+    username: '用户名',
+    password: '密码',
+    loginBtn: '登录',
+    errorMsg: '用户名或密码错误',
+    placeholderUser: '请输入用户名',
+    placeholderPass: '请输入密码',
   },
 };
 
@@ -80,16 +96,122 @@ export default function AdminPage() {
   const [suppliers, setSuppliersState] = useState<{ cn: string; en: string }[]>([]);
   const [saved, setSaved] = useState(true);
 
+  // Login state
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginChecked, setLoginChecked] = useState(false);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('admin_logged_in');
+    if (stored === 'true') {
+      setLoggedIn(true);
+    }
+    setLoginChecked(true);
+  }, []);
+
+  const handleLogin = () => {
+    if (loginUser === 'admin' && loginPass === '123456') {
+      sessionStorage.setItem('admin_logged_in', 'true');
+      setLoggedIn(true);
+      setLoginError('');
+    } else {
+      setLoginError(t.errorMsg);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_logged_in');
+    setLoggedIn(false);
+    setLoginUser('');
+    setLoginPass('');
+  };
+
+  const handleLoginKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleLogin();
+  };
+
   const t = translations[lang];
 
   useEffect(() => {
-    setFactoriesState(getFactories());
-    setProductsState(getProducts());
-    setRunnerTypesState(getRunnerTypes());
-    setMaterialsState(getMaterials());
-    setLocationsState(getLocations());
-    setSuppliersState(getSuppliers());
-  }, []);
+    if (loggedIn) {
+      setFactoriesState(getFactories());
+      setProductsState(getProducts());
+      setRunnerTypesState(getRunnerTypes());
+      setMaterialsState(getMaterials());
+      setLocationsState(getLocations());
+      setSuppliersState(getSuppliers());
+    }
+  }, [loggedIn]);
+
+  if (!loginChecked) return null;
+
+  if (!loggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#dce8d0' }}>
+        <div className="w-full max-w-md rounded-2xl bg-white p-8" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-bold" style={{ color: '#2d3b2d' }}>{t.loginTitle}</h2>
+            <button
+              onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
+              className="flex h-8 items-center rounded-lg border px-2.5 text-xs font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#e0e8dc', color: '#4a7c59' }}
+            >
+              {lang === 'zh' ? 'EN' : '中文'}
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>{t.username}</label>
+              <input
+                type="text"
+                value={loginUser}
+                onChange={(e) => { setLoginUser(e.target.value); setLoginError(''); }}
+                onKeyDown={handleLoginKeyDown}
+                placeholder={t.placeholderUser}
+                className="w-full h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+                style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>{t.password}</label>
+              <input
+                type="password"
+                value={loginPass}
+                onChange={(e) => { setLoginPass(e.target.value); setLoginError(''); }}
+                onKeyDown={handleLoginKeyDown}
+                placeholder={t.placeholderPass}
+                className="w-full h-10 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+                style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+              />
+            </div>
+            {loginError && (
+              <p className="text-sm font-medium" style={{ color: '#e74c3c' }}>{loginError}</p>
+            )}
+            <button
+              onClick={handleLogin}
+              className="h-10 w-full rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: '#4a7c59' }}
+            >
+              {t.loginBtn}
+            </button>
+          </div>
+
+          <div className="mt-5 text-center">
+            <Link
+              href="/"
+              className="text-xs transition-colors hover:underline"
+              style={{ color: '#6b7c6b' }}
+            >
+              {t.back}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const markDirty = () => setSaved(false);
 
@@ -154,6 +276,13 @@ export default function AdminPage() {
             >
               {t.back}
             </Link>
+            <button
+              onClick={handleLogout}
+              className="flex h-9 items-center rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-red-50"
+              style={{ borderColor: '#e0e8dc', color: '#e74c3c' }}
+            >
+              {t.logout}
+            </button>
           </div>
         </div>
 
