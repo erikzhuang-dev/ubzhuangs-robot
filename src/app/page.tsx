@@ -91,6 +91,13 @@ const T = {
     moldByFactory: '各工厂模具数量分布',
     moldByStatus: '模具状态分布',
     moldByBU: '各BU模具数量分布',
+    // Confirm dialog
+    确认修改工厂: '确认修改工厂',
+    确认修改工厂信息: '确认将此模具的工厂从',
+    确认修改状态: '确认修改状态',
+    确认修改状态信息: '确认将此模具的状态从',
+    修改为: '修改为',
+    确认: '确认',
   },
   en: {
     title: 'Mold List',
@@ -163,6 +170,11 @@ const T = {
     moldByFactory: 'Molds by Factory',
     moldByStatus: 'Molds by Status',
     moldByBU: 'Molds by BU',
+    confirmFactoryTitle: 'Confirm Factory Change',
+    confirmFactoryMsg: 'Confirm changing factory from',
+    confirmStatusTitle: 'Confirm Status Change',
+    confirmStatusMsg: 'Confirm changing status from',
+    to: 'to',
   },
 } as const;
 
@@ -191,6 +203,14 @@ export default function Home() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [view, setView] = useState<'main' | 'analysis'>('main');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    moldId: string;
+    field: 'factory' | 'status';
+    oldValue: string;
+    newValue: string;
+    oldLabel: string;
+    newLabel: string;
+  } | null>(null);
   const [newMold, setNewMold] = useState<Partial<Mold>>({
     name: '',
     nameEn: '',
@@ -836,6 +856,9 @@ export default function Home() {
                     statusColor={STATUS_COLOR[mold.status]}
                     onToggle={() => setExpandedRow(isExpanded ? null : mold.id)}
                     onUpdate={updateMold}
+                    onConfirmChange={(moldId, field, oldValue, newValue, oldLabel, newLabel) => {
+                      setConfirmDialog({ moldId, field, oldValue, newValue, oldLabel, newLabel });
+                    }}
                     lang={lang}
                     products={products}
                     factories={factories}
@@ -880,6 +903,83 @@ export default function Home() {
             lang={lang}
           />
         )}
+      {/* Confirm Dialog */}
+        {confirmDialog && (
+          <ConfirmDialog
+            title={lang === 'zh' ? (confirmDialog.field === 'factory' ? '确认修改工厂' : '确认修改状态') : (confirmDialog.field === 'factory' ? 'Confirm Factory Change' : 'Confirm Status Change')}
+            message={
+              lang === 'zh'
+                ? `${confirmDialog.field === 'factory' ? '确认将此模具的工厂从' : '确认将此模具的状态从'} 「${confirmDialog.oldLabel}」 修改为 「${confirmDialog.newLabel}」？`
+                : `${confirmDialog.field === 'factory' ? 'Confirm changing factory from' : 'Confirm changing status from'} "${confirmDialog.oldLabel}" to "${confirmDialog.newLabel}"?`
+            }
+            onConfirm={() => {
+              updateMold(confirmDialog.moldId, confirmDialog.field, confirmDialog.newValue);
+              setConfirmDialog(null);
+            }}
+            onCancel={() => setConfirmDialog(null)}
+            lang={lang}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Confirm Dialog Component
+function ConfirmDialog({
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  lang,
+}: {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  lang: Lang;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+      onClick={onCancel}
+    >
+      <div
+        className="relative mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        style={{ borderRadius: '20px' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-2 flex items-center gap-3">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ backgroundColor: '#fdf2d0' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3 className="text-base font-semibold" style={{ color: '#2d3b2d' }}>{title}</h3>
+        </div>
+        <p className="mb-6 text-sm leading-relaxed" style={{ color: '#4a5568' }}>{message}</p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="h-9 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+            style={{ borderColor: '#e0e8dc', color: '#6b7c6b' }}
+          >
+            {lang === 'zh' ? '取消' : 'Cancel'}
+          </button>
+          <button
+            onClick={onConfirm}
+            className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            {lang === 'zh' ? '确认' : 'Confirm'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1122,6 +1222,7 @@ function MoldRow({
   statusColor,
   onToggle,
   onUpdate,
+  onConfirmChange,
   lang,
   products,
   factories,
@@ -1136,6 +1237,7 @@ function MoldRow({
   statusColor: string;
   onToggle: () => void;
   onUpdate: (id: string, field: keyof Mold, value: unknown) => void;
+  onConfirmChange: (moldId: string, field: 'factory' | 'status', oldValue: string, newValue: string, oldLabel: string, newLabel: string) => void;
   lang: Lang;
   products: Product[];
   factories: string[];
@@ -1271,7 +1373,12 @@ function MoldRow({
                     <DetailField label={t.useFactory}>
                       <select
                         value={mold.factory}
-                        onChange={(e) => onUpdate(mold.id, 'factory', e.target.value)}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          if (newVal !== mold.factory) {
+                            onConfirmChange(mold.id, 'factory', mold.factory, newVal, mold.factory, newVal);
+                          }
+                        }}
                         className="detail-input"
                       >
                         {factories.map((f) => (
@@ -1284,7 +1391,18 @@ function MoldRow({
                     <DetailField label={t.status}>
                       <select
                         value={mold.status}
-                        onChange={(e) => onUpdate(mold.id, 'status', e.target.value)}
+                        onChange={(e) => {
+                          const newVal = e.target.value;
+                          if (newVal !== mold.status) {
+                            const statusLabels: Record<string, string> = {
+                              active: t.active,
+                              maintenance: t.maintenance,
+                              retired: t.retired,
+                              pending: t.pending,
+                            };
+                            onConfirmChange(mold.id, 'status', mold.status, newVal, statusLabels[mold.status] || mold.status, statusLabels[newVal] || newVal);
+                          }
+                        }}
                         className="detail-input"
                       >
                         <option value="active">{t.active}</option>
