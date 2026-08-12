@@ -112,6 +112,10 @@ const T = {
     monthlyCapacityActual: '实际月产能(万)',
     depreciationYears: '折旧年数',
     activationDate: '启用时间',
+    deleteMold: '删除',
+    confirmDeleteTitle: '确认删除',
+    confirmDeleteMsg: '确认要删除此模具吗？',
+    confirmDelete: '删除',
   },
   en: {
     title: 'Mold List',
@@ -203,6 +207,10 @@ const T = {
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
     depreciationYears: 'Depreciation Years',
     activationDate: 'Activation Date',
+    deleteMold: 'Delete',
+    confirmDeleteTitle: 'Confirm Delete',
+    confirmDeleteMsg: 'Are you sure you want to delete this mold?',
+    confirmDelete: 'Delete',
   },
 } as const;
 
@@ -240,6 +248,7 @@ export default function Home() {
     newLabel: string;
   } | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
   const [newMold, setNewMold] = useState<Partial<Mold>>({
     name: '',
     nameEn: '',
@@ -961,6 +970,7 @@ export default function Home() {
                       setConfirmDialog({ moldId, field, oldValue, newValue, oldLabel, newLabel });
                     }}
                     onOEEValidationAlert={() => setAlertMessage(lang === 'zh' ? 'OEE低于0.9，必须填写原因后才能保存' : 'OEE is below 0.9, the reason must be filled in before saving')}
+                    onDeleteClick={(moldId) => setDeleteDialog(moldId)}
                     lang={lang}
                     products={products}
                     factories={factories}
@@ -1030,6 +1040,22 @@ export default function Home() {
             lang={lang}
           />
         )}
+        {/* Delete Confirmation Dialog */}
+        {deleteDialog && (
+          <ConfirmDialog
+            title={T[lang].confirmDeleteTitle}
+            message={T[lang].confirmDeleteMsg}
+            onConfirm={() => {
+              setMolds((prev) => prev.filter((m) => m.id !== deleteDialog));
+              setExpandedRow(null);
+              setDeleteDialog(null);
+            }}
+            onCancel={() => setDeleteDialog(null)}
+            lang={lang}
+            confirmLabel={T[lang].confirmDelete}
+            danger
+          />
+        )}
       </div>
     </div>
   );
@@ -1042,12 +1068,16 @@ function ConfirmDialog({
   onConfirm,
   onCancel,
   lang,
+  confirmLabel,
+  danger,
 }: {
   title: string;
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
   lang: Lang;
+  confirmLabel?: string;
+  danger?: boolean;
 }) {
   return (
     <div
@@ -1063,13 +1093,20 @@ function ConfirmDialog({
         <div className="mb-2 flex items-center gap-3">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: '#fdf2d0' }}
+            style={{ backgroundColor: danger ? '#fde8e8' : '#fdf2d0' }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            {danger ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            )}
           </div>
           <h3 className="text-base font-semibold" style={{ color: '#2d3b2d' }}>{title}</h3>
         </div>
@@ -1085,9 +1122,9 @@ function ConfirmDialog({
           <button
             onClick={onConfirm}
             className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
-            style={{ backgroundColor: '#4a7c59' }}
+            style={{ backgroundColor: danger ? '#e74c3c' : '#4a7c59' }}
           >
-            {lang === 'zh' ? '确认' : 'Confirm'}
+            {confirmLabel || (lang === 'zh' ? '确认' : 'Confirm')}
           </button>
         </div>
       </div>
@@ -1385,6 +1422,7 @@ function MoldRow({
   onUpdate,
   onConfirmChange,
   onOEEValidationAlert,
+  onDeleteClick,
   lang,
   products,
   factories,
@@ -1401,6 +1439,7 @@ function MoldRow({
   onUpdate: (id: string, field: keyof Mold, value: unknown) => void;
   onConfirmChange: (moldId: string, field: 'factory' | 'status', oldValue: string, newValue: string, oldLabel: string, newLabel: string) => void;
   onOEEValidationAlert: () => void;
+  onDeleteClick: (moldId: string) => void;
   lang: Lang;
   products: Product[];
   factories: string[];
@@ -1623,6 +1662,19 @@ function MoldRow({
                         <option value="trial">{t.trialMold}</option>
                       </select>
                     </DetailField>
+                    <div className="pt-2">
+                      <button
+                        onClick={() => onDeleteClick(mold.id)}
+                        className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+                        style={{ backgroundColor: '#e74c3c' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        {t.deleteMold}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
