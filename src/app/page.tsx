@@ -734,22 +734,22 @@ export default function Home() {
 
         {/* Toolbar */}
         <div
-          className="mb-4 flex items-center justify-between rounded-2xl bg-white px-6 py-4"
+          className="mb-4 flex items-center gap-4 rounded-2xl bg-white px-6 py-4"
           style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
         >
-          <h2 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
+          <h2 className="text-lg font-semibold whitespace-nowrap" style={{ color: '#2d3b2d' }}>
             {t.title}
           </h2>
+          {/* Search */}
+          <input
+            type="text"
+            placeholder={t.searchPlaceholder}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="h-9 w-64 rounded-lg border px-3 py-1 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+            style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+          />
           <div className="flex flex-1 items-center justify-end gap-3">
-            {/* Search */}
-            <input
-              type="text"
-              placeholder={t.searchPlaceholder}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="h-9 w-64 rounded-lg border px-3 py-1 text-sm outline-none transition-colors focus:border-[#4a7c59]"
-              style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
-            />
             {/* Factory filter */}
             <select
               value={factoryFilter}
