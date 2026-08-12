@@ -1836,12 +1836,21 @@ function MoldRow({
                     </DetailField>
                     <div className="grid grid-cols-2 gap-3">
                       <DetailField label={t.material}>
-                        <input
-                          type="text"
+                        <select
                           value={mold.material}
                           onChange={(e) => onUpdate(mold.id, 'material', e.target.value)}
                           className="detail-input"
-                        />
+                        >
+                          <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                          {materials.map((mat) => (
+                            <option key={mat} value={mat}>
+                              {mat}
+                            </option>
+                          ))}
+                          {mold.material && !materials.includes(mold.material) && (
+                            <option value={mold.material}>{mold.material}</option>
+                          )}
+                        </select>
                       </DetailField>
                       <DetailField label={t.materialLossCoeff}>
                         <input
@@ -2347,12 +2356,18 @@ function AddMoldModal({
                 </DetailField>
                 <div className="grid grid-cols-2 gap-3">
                   <DetailField label={t.material}>
-                    <input
-                      type="text"
+                    <select
                       value={newMold.material || ''}
                       onChange={(e) => onUpdate('material', e.target.value)}
                       className="detail-input"
-                    />
+                    >
+                      <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                      {materials.map((mat) => (
+                        <option key={mat} value={mat}>
+                          {mat}
+                        </option>
+                      ))}
+                    </select>
                   </DetailField>
                   <DetailField label={t.materialLossCoeff}>
                     <input
