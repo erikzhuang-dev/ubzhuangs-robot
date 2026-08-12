@@ -431,6 +431,8 @@ export default function AdminPage() {
                       });
 
                       localStorage.setItem('molds', JSON.stringify(importedMolds));
+                      // 触发自定义事件通知主页面刷新数据
+                      window.dispatchEvent(new CustomEvent('molds-imported', { detail: { count: importedMolds.length } }));
                       alert(t.importSuccess(importedMolds.length));
                     } catch (err) {
                       alert(t.importFail);

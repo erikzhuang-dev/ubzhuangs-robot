@@ -303,30 +303,35 @@ export default function Home() {
 
   // Load molds from localStorage on mount (client-side only to avoid hydration mismatch)
   useEffect(() => {
-    const saved = localStorage.getItem('molds');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as Mold[];
-        // Recalculate hourlyCapacity and monthlyCapacity with current formulas
-        const recalculated = parsed.map((m: Mold) => ({
-          ...m,
-          sprueWeight: m.sprueWeight ?? 0,
-          moldLength: m.moldLength ?? 0,
-          moldWidth: m.moldWidth ?? 0,
-          moldThickness: m.moldThickness ?? 0,
-          location: m.location ?? '',
-          hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
-          monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
-          theoreticalHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60),
-          actualHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
-          theoreticalMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60) * 24 * 25 / 10000 * 100) / 100,
-          actualMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
-        }));
-        setMolds(recalculated);
-      } catch {
-        // Ignore parse errors
+    const loadMolds = () => {
+      const saved = localStorage.getItem('molds');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as Mold[];
+          // Recalculate hourlyCapacity and monthlyCapacity with current formulas
+          const recalculated = parsed.map((m: Mold) => ({
+            ...m,
+            sprueWeight: m.sprueWeight ?? 0,
+            moldLength: m.moldLength ?? 0,
+            moldWidth: m.moldWidth ?? 0,
+            moldThickness: m.moldThickness ?? 0,
+            location: m.location ?? '',
+            hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
+            monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
+            theoreticalHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60),
+            actualHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
+            theoreticalMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60) * 24 * 25 / 10000 * 100) / 100,
+            actualMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
+          }));
+          setMolds(recalculated);
+        } catch {
+          // Ignore parse errors
+        }
       }
-    }
+    };
+
+    loadMolds();
+
     // Load configurable lists
     setFactories(getFactories());
     setProducts(getProducts());
@@ -334,6 +339,22 @@ export default function Home() {
     setMaterials(getMaterials());
     setLocations(getLocations());
     setSuppliers(getSuppliers());
+
+    // Listen for molds-imported event from admin page
+    const handleImported = () => {
+      loadMolds();
+      setFactories(getFactories());
+      setProducts(getProducts());
+      setRunnerTypes(getRunnerTypes());
+      setMaterials(getMaterials());
+      setLocations(getLocations());
+      setSuppliers(getSuppliers());
+    };
+    window.addEventListener('molds-imported', handleImported);
+
+    return () => {
+      window.removeEventListener('molds-imported', handleImported);
+    };
   }, []);
 
   // Save molds to localStorage whenever they change
