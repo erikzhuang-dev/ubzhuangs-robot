@@ -746,69 +746,73 @@ export default function Home() {
                       const worksheet = workbook.Sheets[sheetName];
                       const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
 
-                      const importedMolds: Mold[] = jsonData.map((row) => {
+                      const importedMolds: Mold[] = jsonData.map((row, index) => {
                         const buValue = String(row['Business Unit'] || row['所属BU'] || row['BU'] || '');
                         let bu = BUS.find((b) => b.name === buValue || b.nameEn === buValue);
                         if (!bu) {
                           const buPrefix = buValue.match(/BU\d/)?.[0]?.toLowerCase();
                           bu = BUS.find((b) => b.id === buPrefix || b.shortName.toLowerCase() === buPrefix);
                         }
-                        const code = String(row['Mold Code'] || '');
+                        const code = String(row['Mold Code'] || row['模具编号'] || '');
                         if (!bu) {
                           const codePrefix = code.match(/M(\d)/)?.[1];
                           bu = BUS.find((b) => b.id === `bu${codePrefix}`);
                         }
                         const product = products.find(
-                          (p) => p.name === row['Product'] || p.nameEn === row['Product']
+                          (p) => p.name === row['Product'] || p.nameEn === row['Product'] || p.name === row['产品'] || p.nameEn === row['产品']
                         );
-                        const statusStr = String(row['Status'] || 'active').toLowerCase();
+                        const statusStr = String(row['Status'] || row['状态'] || 'active').toLowerCase();
                         const statusMap: Record<string, string> = {
                           'in use': 'active',
+                          '在用': 'active',
                           'active': 'active',
                           'maintenance': 'maintenance',
+                          '维修中': 'maintenance',
                           'retired': 'retired',
+                          '已报废': 'retired',
                           'pending': 'pending',
                           'in design': 'pending',
+                          '设计中': 'pending',
                         };
                         const unitPriceStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
                         return {
-                          id: String(code),
-                          code: String(row['Mold Code'] || ''),
-                          name: String(row['Mold Name'] || ''),
-                          nameEn: String(row['Mold Name'] || ''),
-                          supplier: String(row['Supplier'] || ''),
-                          supplierEn: String(row['Supplier'] || ''),
+                          id: code || `imported_${index}_${Date.now()}`,
+                          code: String(code),
+                          name: String(row['Mold Name'] || row['模具名称'] || ''),
+                          nameEn: String(row['Mold Name'] || row['模具名称'] || ''),
+                          supplier: String(row['Supplier'] || row['供应商'] || ''),
+                          supplierEn: String(row['Supplier'] || row['供应商'] || ''),
                           buId: bu?.id || 'bu1',
                           productId: product?.id || '',
-                          productName: product?.name || String(row['Product'] || ''),
-                          productNameEn: product?.nameEn || String(row['Product'] || ''),
-                          factory: String(row['Factory'] || ''),
-                          cavities: Number(row['Cavities'] || 1),
-                          runnerType: String(row['Runner Type'] || 'cold'),
-                          cycleTime: Number(row['Cycle Time(s)'] || 30),
-                          hourlyCapacity: Number(row['Hourly Output'] || 0),
+                          productName: product?.name || String(row['Product'] || row['产品'] || ''),
+                          productNameEn: product?.nameEn || String(row['Product'] || row['产品'] || ''),
+                          factory: String(row['Factory'] || row['工厂'] || ''),
+                          cavities: Number(row['Cavities'] || row['腔数'] || 1),
+                          runnerType: String(row['Runner Type'] || row['流道类型'] || 'cold'),
+                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期'] || 30),
+                          hourlyCapacity: Number(row['Hourly Output'] || row['每小时产能'] || 0),
                           oee: Number(row['OEE'] || 0.9),
-                          oeeReason: String(row['OEE Reason'] || ''),
-                          oeeReasonEn: String(row['OEE Reason'] || ''),
-                          quantity: Number(row['Quantity'] || 0),
+                          oeeReason: String(row['OEE Reason'] || row['OEE原因'] || ''),
+                          oeeReasonEn: String(row['OEE Reason'] || row['OEE原因'] || ''),
+                          quantity: Number(row['Quantity'] || row['数量'] || 0),
                           unitPrice: Number(unitPriceStr) || 0,
-                          totalPrice: Number(row['Quantity'] || 0) * (Number(unitPriceStr) || 0),
+                          totalPrice: Number(row['Quantity'] || row['数量'] || 0) * (Number(unitPriceStr) || 0),
                           lossCoefficient: Number(row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
-                          lossReason: String(row['Loss Reason'] || ''),
-                          lossReasonEn: String(row['Loss Reason'] || ''),
-                          material: String(row['Material'] || ''),
+                          lossReason: String(row['Loss Reason'] || row['损耗原因'] || ''),
+                          lossReasonEn: String(row['Loss Reason'] || row['损耗原因'] || ''),
+                          material: String(row['Material'] || row['材料'] || ''),
                           materialLossCoeff: Number(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'] ?? 0),
-                          productWeight: Number(row['Product Weight(g)'] || 0),
-                          scrapWeight: Number(row['Scrap Weight(g)'] || 0),
-                          wasteWeight: Number(row['Waste Weight(g)'] || 0),
-                          sprueWeight: Number(row['Sprue Weight(g)'] || 0),
-                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || 0),
-                          moldLength: Number(row['Mold Length(mm)'] || 0),
-                          moldWidth: Number(row['Mold Width(mm)'] || 0),
-                          moldThickness: Number(row['Mold Thickness(mm)'] || 0),
-                          location: String(row['Location'] || ''),
+                          productWeight: Number(row['Product Weight(g)'] || row['产品克重'] || 0),
+                          scrapWeight: Number(row['Scrap Weight(g)'] || row['废料克重'] || 0),
+                          wasteWeight: Number(row['Waste Weight(g)'] || row['废料克重'] || 0),
+                          sprueWeight: Number(row['Sprue Weight(g)'] || row['水口料重量'] || 0),
+                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || row['月产能'] || 0),
+                          moldLength: Number(row['Mold Length(mm)'] || row['模具长度'] || 0),
+                          moldWidth: Number(row['Mold Width(mm)'] || row['模具宽度'] || 0),
+                          moldThickness: Number(row['Mold Thickness(mm)'] || row['模具厚度'] || 0),
+                          location: String(row['Location'] || row['所在地'] || ''),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
-                          projectNumber: String(row['Project Number'] || ''),
+                          projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
                         };
                       });
 
