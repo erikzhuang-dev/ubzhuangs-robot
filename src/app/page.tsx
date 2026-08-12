@@ -849,6 +849,7 @@ export default function Home() {
                         }
                         const product = products.find(
                           (p) => p.name === row['Product'] || p.nameEn === row['Product'] || p.name === row['产品'] || p.nameEn === row['产品']
+                            || p.name === row['所属产品'] || p.nameEn === row['所属产品']
                         );
                         const statusStr = String(row['Status'] || row['状态'] || 'active').toLowerCase();
                         const statusMap: Record<string, string> = {
@@ -873,12 +874,12 @@ export default function Home() {
                           supplierEn: String(row['Supplier'] || row['供应商'] || ''),
                           buId: bu?.id || 'bu1',
                           productId: product?.id || '',
-                          productName: product?.name || String(row['Product'] || row['产品'] || ''),
-                          productNameEn: product?.nameEn || String(row['Product'] || row['产品'] || ''),
+                          productName: product?.name || String(row['Product'] || row['产品'] || row['所属产品'] || ''),
+                          productNameEn: product?.nameEn || String(row['Product'] || row['产品'] || row['所属产品'] || ''),
                           factory: String(row['Factory'] || row['工厂'] || ''),
                           cavities: Number(row['Cavities'] || row['腔数'] || 1),
                           runnerType: String(row['Runner Type'] || row['流道类型'] || 'cold'),
-                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期'] || 30),
+                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期(s)'] || row['注塑周期'] || 30),
                           hourlyCapacity: Number(row['Hourly Output'] || row['每小时产能'] || 0),
                           oee: Number(row['OEE'] || 0.9),
                           oeeReason: String(row['OEE Reason'] || row['OEE原因'] || ''),
@@ -889,16 +890,16 @@ export default function Home() {
                           lossCoefficient: Number(row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
                           lossReason: String(row['Loss Reason'] || row['损耗原因'] || ''),
                           lossReasonEn: String(row['Loss Reason'] || row['损耗原因'] || ''),
-                          material: String(row['Material'] || row['材料'] || ''),
+                          material: String(row['Material'] ?? row['产品材料'] ?? row['材料'] ?? '').trim(),
                           materialLossCoeff: Number(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'] ?? 0),
-                          productWeight: Number(row['Product Weight(g)'] || row['产品克重'] || 0),
+                          productWeight: Number(row['Product Weight(g)'] || row['产品单只克重'] || row['产品克重'] || 0),
                           scrapWeight: Number(row['Scrap Weight(g)'] || row['废料克重'] || 0),
                           wasteWeight: Number(row['Waste Weight(g)'] || row['废料克重'] || 0),
-                          sprueWeight: Number(row['Sprue Weight(g)'] || row['水口料重量'] || 0),
-                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || row['月产能'] || 0),
-                          moldLength: Number(row['Mold Length(mm)'] || row['模具长度'] || 0),
-                          moldWidth: Number(row['Mold Width(mm)'] || row['模具宽度'] || 0),
-                          moldThickness: Number(row['Mold Thickness(mm)'] || row['模具厚度'] || 0),
+                          sprueWeight: Number(row['Sprue Weight(g)'] || row['水口料重量(g)'] || row['水口料重量'] || 0),
+                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || row['月产能(万)'] || row['月产能'] || 0),
+                          moldLength: Number(row['Mold Length(mm)'] || row['模具长(mm)'] || row['模具长度'] || 0),
+                          moldWidth: Number(row['Mold Width(mm)'] || row['模具宽(mm)'] || row['模具宽度'] || 0),
+                          moldThickness: Number(row['Mold Thickness(mm)'] || row['模具厚(mm)'] || row['模具厚度'] || 0),
                           location: String(row['Location'] || row['所在地'] || ''),
                           moldType: (() => {
                             const mt = String(row['Mold Type'] || row['模具类型'] || '');
@@ -907,8 +908,8 @@ export default function Home() {
                           })(),
                           theoreticalHourlyCapacity: Number(row['Theoretical Hourly Output'] || row['理论每小时产能'] || 0),
                           actualHourlyCapacity: Number(row['Actual Hourly Output'] || row['实际每小时产能'] || 0),
-                          theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能'] || 0),
-                          actualMonthlyCapacity: Number(row['Actual Monthly Capacity(10k)'] || row['实际月产能'] || 0),
+                          theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能(万)'] || row['理论月产能'] || 0),
+                          actualMonthlyCapacity: Number(row['Actual Monthly Capacity(10k)'] || row['实际月产能(万)'] || row['实际月产能'] || 0),
                           commissionDate: String(row['Activation Date'] || row['启用时间'] || ''),
                           depreciationYears: Number(row['Depreciation Years'] || row['折旧年数'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
