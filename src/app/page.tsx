@@ -1551,12 +1551,25 @@ function MoldRow({
                       />
                     </DetailField>
                     <DetailField label={t.detailSupplier}>
-                      <input
-                        type="text"
+                      <select
                         value={lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
-                        onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'supplierEn' : 'supplier', e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const supplier = suppliers.find((s) => (lang === 'en' ? s.en : s.cn) === val);
+                          onUpdate(mold.id, lang === 'en' ? 'supplierEn' : 'supplier', val);
+                          if (supplier) {
+                            onUpdate(mold.id, lang === 'en' ? 'supplier' : 'supplierEn', lang === 'en' ? supplier.cn : supplier.en);
+                          }
+                        }}
                         className="detail-input"
-                      />
+                      >
+                        <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                        {suppliers.map((s) => (
+                          <option key={s.cn} value={lang === 'en' ? s.en : s.cn}>
+                            {lang === 'en' ? s.en : s.cn}
+                          </option>
+                        ))}
+                      </select>
                     </DetailField>
                     <DetailField label={t.belongBU}>
                       <select
@@ -2074,12 +2087,25 @@ function AddMoldModal({
                   />
                 </DetailField>
                 <DetailField label={t.detailSupplier}>
-                  <input
-                    type="text"
+                  <select
                     value={lang === 'en' ? (newMold.supplierEn || '') : (newMold.supplier || '')}
-                    onChange={(e) => onUpdate(lang === 'en' ? 'supplierEn' : 'supplier', e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const supplier = suppliers.find((s) => (lang === 'en' ? s.en : s.cn) === val);
+                      onUpdate(lang === 'en' ? 'supplierEn' : 'supplier', val);
+                      if (supplier) {
+                        onUpdate(lang === 'en' ? 'supplier' : 'supplierEn', lang === 'en' ? supplier.cn : supplier.en);
+                      }
+                    }}
                     className="detail-input"
-                  />
+                  >
+                    <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                    {suppliers.map((s) => (
+                      <option key={s.cn} value={lang === 'en' ? s.en : s.cn}>
+                        {lang === 'en' ? s.en : s.cn}
+                      </option>
+                    ))}
+                  </select>
                 </DetailField>
                 <DetailField label={t.belongBU}>
                   <select
@@ -2101,12 +2127,24 @@ function AddMoldModal({
                   </select>
                 </DetailField>
                 <DetailField label={t.belongProduct}>
-                  <input
-                    type="text"
-                    value={lang === 'en' ? (newMold.productNameEn || '') : (newMold.productName || '')}
-                    onChange={(e) => onUpdate(lang === 'en' ? 'productNameEn' : 'productName', e.target.value)}
+                  <select
+                    value={newMold.productId || ''}
+                    onChange={(e) => {
+                      const productId = e.target.value;
+                      const product = products.find((p) => p.id === productId);
+                      onUpdate('productId', productId);
+                      onUpdate('productName', product?.name || '');
+                      onUpdate('productNameEn', product?.nameEn || '');
+                    }}
                     className="detail-input"
-                  />
+                  >
+                    <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                    {products.filter((p) => p.buId === (newMold.buId || BUS[0].id)).map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {lang === 'en' ? (p.nameEn || p.name) : p.name}
+                      </option>
+                    ))}
+                  </select>
                 </DetailField>
                 <DetailField label={t.useFactory}>
                   <select
