@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 import {
   BUS,
   getFactories, setFactories,
@@ -11,7 +12,7 @@ import {
   getLocations, setLocations,
   getSuppliers, setSuppliers,
 } from '@/lib/config-store';
-import type { Product } from '@/lib/types';
+import type { Mold, Product } from '@/lib/types';
 
 type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers';
 type Lang = 'en' | 'zh';
@@ -49,6 +50,9 @@ const translations = {
     placeholderUser: 'Enter username',
     placeholderPass: 'Enter password',
     timeoutMsg: 'Session expired. Please log in again.',
+    importExcel: 'Import Excel',
+    importSuccess: (n: number) => `Successfully imported ${n} molds`,
+    importFail: 'Import failed, please check the file format',
   },
   zh: {
     title: '后台管理',
@@ -82,6 +86,9 @@ const translations = {
     placeholderUser: '请输入用户名',
     placeholderPass: '请输入密码',
     timeoutMsg: '登录已超时，请重新登录',
+    importExcel: '导入Excel',
+    importSuccess: (n: number) => `成功导入 ${n} 条模具数据`,
+    importFail: '导入失败，请检查文件格式',
   },
 };
 
@@ -327,6 +334,130 @@ export default function AdminPage() {
               style={{ backgroundColor: saved ? '#ccc' : '#4a7c59', color: saved ? '#999' : '#fff' }}
             >
               {t.save}
+            </button>
+            {/* Import Excel button */}
+            <button
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.xlsx,.xls';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    try {
+                      const data = ev.target?.result;
+                      const workbook = XLSX.read(data, { type: 'array' });
+                      const sheetName = workbook.SheetNames[0];
+                      const worksheet = workbook.Sheets[sheetName];
+                      const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
+
+                      const importedMolds: Mold[] = jsonData.map((row, index) => {
+                        const buValue = String(row['Business Unit'] || row['所属BU'] || row['BU'] || '');
+                        let bu = BUS.find((b) => b.name === buValue || b.nameEn === buValue);
+                        if (!bu) {
+                          const buPrefix = buValue.match(/BU\d/)?.[0]?.toLowerCase();
+                          bu = BUS.find((b) => b.id === buPrefix || b.shortName.toLowerCase() === buPrefix);
+                        }
+                        const code = String(row['Mold Code'] || row['模具编号'] || '');
+                        if (!bu) {
+                          const codePrefix = code.match(/M(\d)/)?.[1];
+                          bu = BUS.find((b) => b.id === `bu${codePrefix}`);
+                        }
+                        const statusStr = String(row['Status'] || row['状态'] || 'active').toLowerCase();
+                        const statusMap: Record<string, string> = {
+                          'in use': 'active',
+                          '在用': 'active',
+                          'active': 'active',
+                          'maintenance': 'maintenance',
+                          '维修中': 'maintenance',
+                          'retired': 'retired',
+                          '已报废': 'retired',
+                          'pending': 'pending',
+                          'in design': 'pending',
+                          '设计中': 'pending',
+                        };
+                        const unitPriceStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
+                        return {
+                          id: code || `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                          code: String(code),
+                          name: String(row['Mold Name'] || row['模具名称'] || ''),
+                          nameEn: String(row['Mold Name'] || row['模具名称'] || ''),
+                          supplier: String(row['Supplier'] || row['供应商'] || ''),
+                          supplierEn: String(row['Supplier'] || row['供应商'] || ''),
+                          buId: bu?.id || 'bu1',
+                          productId: '',
+                          productName: String(row['Product'] || row['产品'] || ''),
+                          productNameEn: String(row['Product'] || row['产品'] || ''),
+                          factory: String(row['Factory'] || row['工厂'] || ''),
+                          cavities: Number(row['Cavities'] || row['腔数'] || 1),
+                          runnerType: String(row['Runner Type'] || row['流道类型'] || 'cold'),
+                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期'] || 30),
+                          hourlyCapacity: Number(row['Hourly Output'] || row['每小时产能'] || 0),
+                          oee: Number(row['OEE'] || 0.9),
+                          oeeReason: String(row['OEE Reason'] || row['OEE原因'] || ''),
+                          oeeReasonEn: String(row['OEE Reason'] || row['OEE原因'] || ''),
+                          quantity: Number(row['Quantity'] || row['数量'] || 0),
+                          unitPrice: Number(unitPriceStr) || 0,
+                          totalPrice: Number(row['Quantity'] || row['数量'] || 0) * (Number(unitPriceStr) || 0),
+                          lossCoefficient: Number(row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
+                          lossReason: String(row['Loss Reason'] || row['损耗原因'] || ''),
+                          lossReasonEn: String(row['Loss Reason'] || row['损耗原因'] || ''),
+                          material: String(row['Material'] || row['材料'] || ''),
+                          materialLossCoeff: Number(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'] ?? 0),
+                          productWeight: Number(row['Product Weight(g)'] || row['产品克重'] || 0),
+                          wasteWeight: Number(row['Waste Weight(g)'] || row['废料克重'] || 0),
+                          sprueWeight: Number(row['Sprue Weight(g)'] || row['水口料重量'] || 0),
+                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || row['月产能'] || 0),
+                          moldLength: Number(row['Mold Length(mm)'] || row['模具长度'] || 0),
+                          moldWidth: Number(row['Mold Width(mm)'] || row['模具宽度'] || 0),
+                          moldThickness: Number(row['Mold Thickness(mm)'] || row['模具厚度'] || 0),
+                          location: String(row['Location'] || row['所在地'] || ''),
+                          moldType: (() => {
+                            const mt = String(row['Mold Type'] || row['模具类型'] || '');
+                            if (mt === 'trial' || mt === '试验模' || mt === 'Trial Mold') return 'trial';
+                            return 'mass';
+                          })(),
+                          theoreticalHourlyCapacity: Number(row['Theoretical Hourly Output'] || row['理论每小时产能'] || 0),
+                          actualHourlyCapacity: Number(row['Actual Hourly Output'] || row['实际每小时产能'] || 0),
+                          theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能'] || 0),
+                          actualMonthlyCapacity: Number(row['Actual Monthly Capacity(10k)'] || row['实际月产能'] || 0),
+                          commissionDate: String(row['Activation Date'] || row['启用时间'] || ''),
+                          depreciationYears: Number(row['Depreciation Years'] || row['折旧年数'] || 0),
+                          status: (statusMap[statusStr] || 'active') as Mold['status'],
+                          projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
+                        };
+                      });
+
+                      localStorage.setItem('molds', JSON.stringify(importedMolds));
+                      alert(t.importSuccess(importedMolds.length));
+                    } catch (err) {
+                      alert(t.importFail);
+                    }
+                  };
+                  reader.readAsArrayBuffer(file);
+                };
+                input.click();
+              }}
+              className="flex h-9 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              {t.importExcel}
             </button>
             <Link
               href="/"
