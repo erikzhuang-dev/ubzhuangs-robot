@@ -36,6 +36,13 @@ export interface Mold {
   moldWidth: number; // 模具尺寸-宽(mm)
   moldThickness: number; // 模具尺寸-厚(mm)
   location: string; // 所在地
+  moldType?: string; // 模具类型：mass(量产模) / trial(试验模)
+  theoreticalHourlyCapacity?: number; // 理论每小时产能
+  actualHourlyCapacity?: number; // 实际每小时产能
+  theoreticalMonthlyCapacity?: number; // 理论月产能(万)
+  actualMonthlyCapacity?: number; // 实际月产能(万)
+  commissionDate?: string; // 启用时间
+  depreciationYears?: number; // 折旧年数
   status: 'active' | 'maintenance' | 'retired' | 'pending';
 }
 

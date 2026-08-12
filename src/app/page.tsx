@@ -101,6 +101,17 @@ const T = {
     oeeValidationTitle: 'OEE校验',
     oeeValidationMsg: 'OEE低于0.9，必须填写原因后才能保存',
     oeeValidationOk: '确定',
+    moldType: '模具类型',
+    massProduction: '量产模',
+    trialMold: '试验模',
+    theoreticalOutput: '理论产出',
+    actualOutput: '实际产出',
+    hourlyOutputTheory: '理论每小时产能',
+    hourlyOutputActual: '实际每小时产能',
+    monthlyCapacityTheory: '理论月产能(万)',
+    monthlyCapacityActual: '实际月产能(万)',
+    depreciationYears: '折旧年数',
+    activationDate: '启用时间',
   },
   en: {
     title: 'Mold List',
@@ -181,6 +192,17 @@ const T = {
     oeeValidationTitle: 'OEE Validation',
     oeeValidationMsg: 'OEE is below 0.9, the reason must be filled in before saving',
     oeeValidationOk: 'OK',
+    moldType: 'Mold Type',
+    massProduction: 'Mass Production',
+    trialMold: 'Trial Mold',
+    theoreticalOutput: 'Theoretical Output',
+    actualOutput: 'Actual Output',
+    hourlyOutputTheory: 'Theoretical Hourly Output',
+    hourlyOutputActual: 'Actual Hourly Output',
+    monthlyCapacityTheory: 'Theoretical Monthly Capacity(10k)',
+    monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
+    depreciationYears: 'Depreciation Years',
+    activationDate: 'Activation Date',
   },
 } as const;
 
@@ -279,6 +301,10 @@ export default function Home() {
           location: m.location ?? '',
           hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
           monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
+          theoreticalHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60),
+          actualHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
+          theoreticalMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60) * 24 * 25 / 10000 * 100) / 100,
+          actualMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
         }));
         setMolds(recalculated);
       } catch {
@@ -347,8 +373,13 @@ export default function Home() {
           const cavities = field === 'cavities' ? Number(value) : updated.cavities;
           const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime;
           if (cycleTime > 0) {
-            updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60 * updated.oee);
-            updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+            const theoretical = Math.round(cavities * (60 / cycleTime) * 60);
+            updated.theoreticalHourlyCapacity = theoretical;
+            updated.actualHourlyCapacity = Math.round(theoretical * updated.oee);
+            updated.hourlyCapacity = updated.actualHourlyCapacity;
+            updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
+            updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+            updated.monthlyCapacity = updated.actualMonthlyCapacity;
           }
         }
         if (field === 'hourlyCapacity') {
@@ -357,8 +388,13 @@ export default function Home() {
         }
         if (field === 'oee') {
           const oee = Number(value);
-          updated.hourlyCapacity = Math.round(updated.cavities * (60 / updated.cycleTime) * 60 * oee);
-          updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+          const theoretical = Math.round(updated.cavities * (60 / updated.cycleTime) * 60);
+          updated.theoreticalHourlyCapacity = theoretical;
+          updated.actualHourlyCapacity = Math.round(theoretical * oee);
+          updated.hourlyCapacity = updated.actualHourlyCapacity;
+          updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
+          updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+          updated.monthlyCapacity = updated.actualMonthlyCapacity;
         }
         if (field === 'quantity' || field === 'unitPrice') {
           updated.totalPrice = updated.quantity * updated.unitPrice;
@@ -386,6 +422,8 @@ export default function Home() {
       [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_NAME_MAP[m.runnerType]?.[L] || m.runnerType,
       [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
       [L === 'zh' ? '每小时产能' : 'Hourly Output']: m.hourlyCapacity,
+      [L === 'zh' ? '理论每小时产能' : 'Theoretical Hourly Output']: m.theoreticalHourlyCapacity ?? 0,
+      [L === 'zh' ? '实际每小时产能' : 'Actual Hourly Output']: m.actualHourlyCapacity ?? 0,
       'OEE': m.oee,
       [L === 'zh' ? 'OEE原因' : 'OEE Reason']: m.oeeReason || '',
       [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
@@ -400,10 +438,15 @@ export default function Home() {
       [L === 'zh' ? '废料克重' : 'Waste Weight(g)']: m.wasteWeight,
       [L === 'zh' ? '水口料重量(g)' : 'Sprue Weight(g)']: m.sprueWeight,
       [L === 'zh' ? '月产能(万)' : 'Monthly Capacity(10k)']: m.monthlyCapacity,
+      [L === 'zh' ? '理论月产能(万)' : 'Theoretical Monthly Capacity(10k)']: m.theoreticalMonthlyCapacity ?? 0,
+      [L === 'zh' ? '实际月产能(万)' : 'Actual Monthly Capacity(10k)']: m.actualMonthlyCapacity ?? 0,
       [L === 'zh' ? '模具长(mm)' : 'Mold Length(mm)']: m.moldLength,
       [L === 'zh' ? '模具宽(mm)' : 'Mold Width(mm)']: m.moldWidth,
       [L === 'zh' ? '模具厚(mm)' : 'Mold Thickness(mm)']: m.moldThickness,
       [L === 'zh' ? '所在地' : 'Location']: m.location,
+      [L === 'zh' ? '模具类型' : 'Mold Type']: m.moldType === 'trial' ? (L === 'zh' ? '试验模' : 'Trial Mold') : (L === 'zh' ? '量产模' : 'Mass Production'),
+      [L === 'zh' ? '启用时间' : 'Activation Date']: m.commissionDate || '',
+      [L === 'zh' ? '折旧年数' : 'Depreciation Years']: m.depreciationYears ?? 0,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -454,6 +497,13 @@ export default function Home() {
       moldWidth: newMold.moldWidth || 0,
       moldThickness: newMold.moldThickness || 0,
       location: newMold.location || '',
+      moldType: newMold.moldType || 'mass',
+      theoreticalHourlyCapacity: newMold.theoreticalHourlyCapacity || 0,
+      actualHourlyCapacity: newMold.actualHourlyCapacity || 0,
+      theoreticalMonthlyCapacity: newMold.theoreticalMonthlyCapacity || 0,
+      actualMonthlyCapacity: newMold.actualMonthlyCapacity || 0,
+      commissionDate: newMold.commissionDate || '',
+      depreciationYears: newMold.depreciationYears || 0,
       status: newMold.status || 'pending',
     };
     setMolds((prev) => [...prev, mold]);
@@ -492,6 +542,13 @@ export default function Home() {
       moldWidth: 0,
       moldThickness: 0,
       location: '',
+      moldType: 'mass',
+      theoreticalHourlyCapacity: 0,
+      actualHourlyCapacity: 0,
+      theoreticalMonthlyCapacity: 0,
+      actualMonthlyCapacity: 0,
+      commissionDate: '',
+      depreciationYears: 0,
       status: 'pending',
     });
   }, [molds, newMold]);
@@ -504,8 +561,13 @@ export default function Home() {
         const cavities = field === 'cavities' ? Number(value) : updated.cavities || 1;
         const cycleTime = field === 'cycleTime' ? Number(value) : updated.cycleTime || 30;
         if (cycleTime > 0) {
-          updated.hourlyCapacity = Math.round(cavities * (60 / cycleTime) * 60 * (updated.oee || 0.9));
-          updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+          const theoretical = Math.round(cavities * (60 / cycleTime) * 60);
+          updated.theoreticalHourlyCapacity = theoretical;
+          updated.actualHourlyCapacity = Math.round(theoretical * (updated.oee || 0.9));
+          updated.hourlyCapacity = updated.actualHourlyCapacity;
+          updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
+          updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+          updated.monthlyCapacity = updated.actualMonthlyCapacity;
         }
       }
       if (field === 'hourlyCapacity') {
@@ -514,8 +576,13 @@ export default function Home() {
       }
       if (field === 'oee') {
         const oee = Number(value);
-        updated.hourlyCapacity = Math.round((updated.cavities || 1) * (60 / (updated.cycleTime || 30)) * 60 * oee);
-        updated.monthlyCapacity = Math.round(updated.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+        const theoretical = Math.round((updated.cavities || 1) * (60 / (updated.cycleTime || 30)) * 60);
+        updated.theoreticalHourlyCapacity = theoretical;
+        updated.actualHourlyCapacity = Math.round(theoretical * oee);
+        updated.hourlyCapacity = updated.actualHourlyCapacity;
+        updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
+        updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+        updated.monthlyCapacity = updated.actualMonthlyCapacity;
       }
       if (field === 'quantity' || field === 'unitPrice') {
         updated.totalPrice = (updated.quantity || 1) * (updated.unitPrice || 0);
@@ -811,6 +878,17 @@ export default function Home() {
                           moldWidth: Number(row['Mold Width(mm)'] || row['模具宽度'] || 0),
                           moldThickness: Number(row['Mold Thickness(mm)'] || row['模具厚度'] || 0),
                           location: String(row['Location'] || row['所在地'] || ''),
+                          moldType: (() => {
+                            const mt = String(row['Mold Type'] || row['模具类型'] || '');
+                            if (mt === 'trial' || mt === '试验模' || mt === 'Trial Mold') return 'trial';
+                            return 'mass';
+                          })(),
+                          theoreticalHourlyCapacity: Number(row['Theoretical Hourly Output'] || row['理论每小时产能'] || 0),
+                          actualHourlyCapacity: Number(row['Actual Hourly Output'] || row['实际每小时产能'] || 0),
+                          theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能'] || 0),
+                          actualMonthlyCapacity: Number(row['Actual Monthly Capacity(10k)'] || row['实际月产能'] || 0),
+                          commissionDate: String(row['Activation Date'] || row['启用时间'] || ''),
+                          depreciationYears: Number(row['Depreciation Years'] || row['折旧年数'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
                         };
@@ -1535,6 +1613,16 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
+                    <DetailField label={t.moldType}>
+                      <select
+                        value={mold.moldType ?? 'mass'}
+                        onChange={(e) => onUpdate(mold.id, 'moldType', e.target.value)}
+                        className="detail-input"
+                      >
+                        <option value="mass">{t.massProduction}</option>
+                        <option value="trial">{t.trialMold}</option>
+                      </select>
+                    </DetailField>
                   </div>
                 </div>
 
@@ -1574,14 +1662,24 @@ function MoldRow({
                         />
                       </DetailField>
                     </div>
-                    <DetailField label={t.hourlyCapacity}>
-                      <div
-                        className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
-                        style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
-                      >
-                        {mold.hourlyCapacity} <span className="ml-1 text-xs">{t.capacityUnit}</span>
-                      </div>
-                    </DetailField>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailField label={t.hourlyOutputTheory}>
+                        <div
+                          className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                          style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                        >
+                          {mold.theoreticalHourlyCapacity ?? 0} <span className="ml-1 text-xs">{t.capacityUnit}</span>
+                        </div>
+                      </DetailField>
+                      <DetailField label={t.hourlyOutputActual}>
+                        <div
+                          className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                          style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                        >
+                          {mold.actualHourlyCapacity ?? 0} <span className="ml-1 text-xs">{t.capacityUnit}</span>
+                        </div>
+                      </DetailField>
+                    </div>
                     <DetailField label={t.oee}>
                       <input
                         type="number"
@@ -1711,15 +1809,48 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label={t.monthlyCapacity}>
+                      <DetailField label={t.activationDate}>
+                        <input
+                          type="date"
+                          value={mold.commissionDate ?? ''}
+                          onChange={(e) => {
+                            const date = e.target.value;
+                            const today = new Date();
+                            const start = new Date(date);
+                            const years = date ? Math.floor((today.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
+                            onUpdate(mold.id, 'commissionDate', date);
+                            onUpdate(mold.id, 'depreciationYears', years);
+                          }}
+                          className="detail-input"
+                        />
+                      </DetailField>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailField label={t.monthlyCapacityTheory}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
                         >
-                          {mold.monthlyCapacity ?? 0} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
+                          {(mold.theoreticalMonthlyCapacity ?? 0).toFixed(2)} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
+                        </div>
+                      </DetailField>
+                      <DetailField label={t.monthlyCapacityActual}>
+                        <div
+                          className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                          style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                        >
+                          {(mold.actualMonthlyCapacity ?? 0).toFixed(2)} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
                         </div>
                       </DetailField>
                     </div>
+                    <DetailField label={t.depreciationYears}>
+                      <div
+                        className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                        style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                      >
+                        {mold.depreciationYears ?? 0} {lang === 'zh' ? '年' : 'years'}
+                      </div>
+                    </DetailField>
                   </div>
                 </div>
               </div>
@@ -1974,6 +2105,31 @@ function AddMoldModal({
                     type="text"
                     value={newMold.location ?? ''}
                     onChange={(e) => onUpdate('location', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.moldType}>
+                  <select
+                    value={newMold.moldType ?? 'mass'}
+                    onChange={(e) => onUpdate('moldType', e.target.value)}
+                    className="detail-input"
+                  >
+                    <option value="mass">{t.massProduction}</option>
+                    <option value="trial">{t.trialMold}</option>
+                  </select>
+                </DetailField>
+                <DetailField label={t.activationDate}>
+                  <input
+                    type="date"
+                    value={newMold.commissionDate ?? ''}
+                    onChange={(e) => {
+                      const date = e.target.value;
+                      const today = new Date();
+                      const start = new Date(date);
+                      const years = date ? Math.floor((today.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
+                      onUpdate('commissionDate', date);
+                      onUpdate('depreciationYears', years);
+                    }}
                     className="detail-input"
                   />
                 </DetailField>

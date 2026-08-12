@@ -132,9 +132,26 @@ function generateMolds(): Mold[] {
         moldWidth: Math.round(rand() * 400 + 200),
         moldThickness: Math.round(rand() * 200 + 100),
         location: LOCATIONS[Math.floor(rand() * LOCATIONS.length)],
+        moldType: rand() > 0.3 ? 'mass' : 'trial',
+        theoreticalHourlyCapacity: 0,
+        actualHourlyCapacity: 0,
+        theoreticalMonthlyCapacity: 0,
+        actualMonthlyCapacity: 0,
+        commissionDate: `202${Math.floor(rand() * 4)}-${String(Math.floor(rand() * 12) + 1).padStart(2, '0')}-01`,
+        depreciationYears: 0,
         status: STATUSES[Math.floor(rand() * STATUSES.length)],
       };
-      mold.monthlyCapacity = Math.round(mold.hourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+      mold.theoreticalHourlyCapacity = Math.round(mold.cavities * (60 / mold.cycleTime) * 60);
+      mold.actualHourlyCapacity = Math.round(mold.theoreticalHourlyCapacity * mold.oee);
+      mold.hourlyCapacity = mold.actualHourlyCapacity;
+      mold.theoreticalMonthlyCapacity = Math.round(mold.theoreticalHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+      mold.actualMonthlyCapacity = Math.round(mold.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+      mold.monthlyCapacity = mold.actualMonthlyCapacity;
+      // 计算折旧年数
+      if (mold.commissionDate) {
+        const startYear = parseInt(mold.commissionDate.split('-')[0]);
+        mold.depreciationYears = Math.max(0, 2026 - startYear);
+      }
       molds.push(mold);
       moldIndex++;
     }
