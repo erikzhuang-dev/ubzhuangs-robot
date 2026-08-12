@@ -776,7 +776,7 @@ export default function Home() {
                         };
                         const unitPriceStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
                         return {
-                          id: code || `imported_${index}_${Date.now()}`,
+                          id: code || `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                           code: String(code),
                           name: String(row['Mold Name'] || row['模具名称'] || ''),
                           nameEn: String(row['Mold Name'] || row['模具名称'] || ''),
@@ -868,11 +868,11 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {filteredMolds.map((mold) => {
+              {filteredMolds.map((mold, index) => {
                 const isExpanded = expandedRow === mold.id;
                 return (
                   <MoldRow
-                    key={mold.id}
+                    key={mold.id || `mold_${index}`}
                     mold={mold}
                     isExpanded={isExpanded}
                     statusLabel={statusLabel(mold.status)}
