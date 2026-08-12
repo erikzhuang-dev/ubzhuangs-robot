@@ -1720,10 +1720,11 @@ function MoldRow({
                           onChange={(e) => onUpdate(mold.id, 'runnerType', e.target.value)}
                           className="detail-input"
                         >
-                          <option value="热流道">{t.hotRunner}</option>
-                          <option value="冷流道">{t.coldRunner}</option>
-                          <option value="半热流道">{t.semiHotRunner}</option>
-                          <option value="针阀式热流道">{t.valveHotRunner}</option>
+                          {runnerTypes.map((rt) => (
+                            <option key={rt} value={rt}>
+                              {RUNNER_NAME_MAP[rt]?.[lang] || rt}
+                            </option>
+                          ))}
                         </select>
                       </DetailField>
                       <DetailField label={t.cycleTime}>
@@ -2247,10 +2248,11 @@ function AddMoldModal({
                       onChange={(e) => onUpdate('runnerType', e.target.value)}
                       className="detail-input"
                     >
-                      <option value="热流道">{t.hotRunner}</option>
-                      <option value="冷流道">{t.coldRunner}</option>
-                      <option value="半热流道">{t.semiHotRunner}</option>
-                      <option value="针阀式热流道">{t.valveHotRunner}</option>
+                      {runnerTypes.map((rt) => (
+                        <option key={rt} value={rt}>
+                          {RUNNER_NAME_MAP[rt]?.[lang] || rt}
+                        </option>
+                      ))}
                     </select>
                   </DetailField>
                   <DetailField label={t.cycleTime}>
