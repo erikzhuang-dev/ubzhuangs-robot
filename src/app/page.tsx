@@ -737,7 +737,7 @@ export default function Home() {
           className="mb-4 flex items-center justify-between rounded-2xl bg-white px-6 py-4"
           style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
               {t.title}
             </h2>
@@ -750,8 +750,6 @@ export default function Home() {
               className="h-9 w-64 rounded-lg border px-3 py-1 text-sm outline-none transition-colors focus:border-[#4a7c59]"
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             />
-          </div>
-          <div className="flex items-center gap-3">
             {/* Factory filter */}
             <select
               value={factoryFilter}
@@ -770,6 +768,8 @@ export default function Home() {
             <span className="text-sm whitespace-nowrap" style={{ color: '#6b7c6b' }}>
               {t.totalRecords(filteredMolds.length)}
             </span>
+          </div>
+          <div className="flex items-center gap-3">
             {/* Add button */}
             <button
               onClick={() => setShowAddModal(true)}
