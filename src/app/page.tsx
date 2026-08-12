@@ -772,7 +772,7 @@ export default function Home() {
                         };
                         const unitPriceStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
                         return {
-                          id: String(row['ID'] || `M${Date.now()}`),
+                          id: String(code),
                           code: String(row['Mold Code'] || ''),
                           name: String(row['Mold Name'] || ''),
                           nameEn: String(row['Mold Name'] || ''),
