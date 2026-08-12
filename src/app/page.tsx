@@ -216,16 +216,16 @@ const T = {
 
 const STATUS_COLOR: Record<Mold['status'], string> = {
   active: 'bg-[#e8f5e9] text-[#4a7c59]',
-  maintenance: 'bg-[#fff3e0] text-[#f39c12]',
-  retired: 'bg-[#fde8e8] text-[#e74c3c]',
-  pending: 'bg-[#e3f2fd] text-[#3498db]',
+  maintenance: 'bg-[#fde8e8] text-[#e74c3c]',
+  retired: 'bg-[#f0f0f0] text-[#7f8c8d]',
+  pending: 'bg-[#fff9e6] text-[#f39c12]',
 };
 
 const STATUS_CHART_COLOR: Record<Mold['status'], string> = {
   active: '#4a7c59',
-  maintenance: '#f39c12',
-  retired: '#e74c3c',
-  pending: '#3498db',
+  maintenance: '#e74c3c',
+  retired: '#7f8c8d',
+  pending: '#f39c12',
 };
 
 const RUNNER_NAME_MAP: Record<string, { zh: string; en: string }> = {
