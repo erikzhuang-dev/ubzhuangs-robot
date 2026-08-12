@@ -215,10 +215,17 @@ const T = {
 } as const;
 
 const STATUS_COLOR: Record<Mold['status'], string> = {
-  active: 'bg-green-100 text-green-700',
-  maintenance: 'bg-yellow-100 text-yellow-700',
-  retired: 'bg-gray-100 text-gray-500',
-  pending: 'bg-blue-100 text-blue-700',
+  active: 'bg-[#e8f5e9] text-[#4a7c59]',
+  maintenance: 'bg-[#fff3e0] text-[#f39c12]',
+  retired: 'bg-[#fde8e8] text-[#e74c3c]',
+  pending: 'bg-[#e3f2fd] text-[#3498db]',
+};
+
+const STATUS_CHART_COLOR: Record<Mold['status'], string> = {
+  active: '#4a7c59',
+  maintenance: '#f39c12',
+  retired: '#e74c3c',
+  pending: '#3498db',
 };
 
 const RUNNER_NAME_MAP: Record<string, { zh: string; en: string }> = {
@@ -1218,12 +1225,15 @@ function AnalysisModal({
   }, [molds]);
 
   const statusStats = useMemo(() => {
-    const stats: Record<string, number> = {};
+    const stats: Record<string, { count: number; status: Mold['status'] }> = {};
     molds.forEach((m) => {
       const label = T[lang][m.status] || m.status;
-      stats[label] = (stats[label] || 0) + 1;
+      if (!stats[label]) {
+        stats[label] = { count: 0, status: m.status };
+      }
+      stats[label].count += 1;
     });
-    return Object.entries(stats).map(([name, count]) => ({ name, count }));
+    return Object.entries(stats).map(([name, { count, status }]) => ({ name, count, status }));
   }, [molds, lang]);
 
   const buStats = useMemo(() => {
@@ -1276,17 +1286,17 @@ function AnalysisModal({
                 </h3>
                 <div className="flex items-center gap-6">
                 <DonutChart
-                  segments={statusStats.map((stat, idx) => ({
+                  segments={statusStats.map((stat) => ({
                     value: stat.count,
-                    color: COLORS[idx % COLORS.length],
+                    color: STATUS_CHART_COLOR[stat.status] || '#95a5a6',
                   }))}
                 />
                 <div className="space-y-2">
-                  {statusStats.map((stat, idx) => (
+                  {statusStats.map((stat) => (
                     <div key={stat.name} className="flex items-center gap-2">
                       <div
                         className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                        style={{ backgroundColor: STATUS_CHART_COLOR[stat.status] || '#95a5a6' }}
                       />
                       <span className="text-xs" style={{ color: '#6b7c6b' }}>
                         {stat.name}
