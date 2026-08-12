@@ -300,6 +300,7 @@ export default function Home() {
   const [materials, setMaterials] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<{ cn: string; en: string }[]>([]);
+  const [moldsLoaded, setMoldsLoaded] = useState(false);
 
   // Load molds from localStorage on mount (client-side only to avoid hydration mismatch)
   useEffect(() => {
@@ -327,6 +328,7 @@ export default function Home() {
         // Ignore parse errors
       }
     }
+    setMoldsLoaded(true);
     // Load configurable lists
     setFactories(getFactories());
     setProducts(getProducts());
@@ -336,10 +338,12 @@ export default function Home() {
     setSuppliers(getSuppliers());
   }, []);
 
-  // Save molds to localStorage whenever they change
+  // Save molds to localStorage whenever they change (only after initial load completes,
+  // otherwise the mount render would overwrite imported data with INITIAL_MOLDS)
   useEffect(() => {
+    if (!moldsLoaded) return;
     localStorage.setItem('molds', JSON.stringify(molds));
-  }, [molds]);
+  }, [molds, moldsLoaded]);
 
   const t = T[lang];
 
