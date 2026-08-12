@@ -1673,14 +1673,6 @@ function MoldRow({
                         </div>
                       </div>
                     </DetailField>
-                    <DetailField label={t.location}>
-                      <input
-                        type="text"
-                        value={mold.location ?? ''}
-                        onChange={(e) => onUpdate(mold.id, 'location', e.target.value)}
-                        className="detail-input"
-                      />
-                    </DetailField>
                     <DetailField label={t.moldType}>
                       <select
                         value={mold.moldType ?? 'mass'}
@@ -2205,14 +2197,6 @@ function AddMoldModal({
                       />
                     </div>
                   </div>
-                </DetailField>
-                <DetailField label={t.location}>
-                  <input
-                    type="text"
-                    value={newMold.location ?? ''}
-                    onChange={(e) => onUpdate('location', e.target.value)}
-                    className="detail-input"
-                  />
                 </DetailField>
                 <DetailField label={t.moldType}>
                   <select
