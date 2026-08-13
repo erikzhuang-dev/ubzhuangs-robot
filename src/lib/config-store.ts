@@ -26,6 +26,14 @@ export const DEFAULT_SUPPLIERS = [
   { cn: '国盛精密', en: 'Guosheng Precision' },
 ];
 
+export const DEFAULT_ASSET_OWNERSHIPS = [
+  { cn: '千禧光', en: 'Qianxiguang' },
+  { cn: '龙德', en: 'Longde' },
+  { cn: '普昂', en: 'Puang' },
+  { cn: '稳健', en: 'Wenjian' },
+  { cn: '凯乐', en: 'Kaile' },
+];
+
 // ── Storage keys ──
 const KEYS = {
   factories: 'config_factories',
@@ -34,6 +42,7 @@ const KEYS = {
   materials: 'config_materials',
   locations: 'config_locations',
   suppliers: 'config_suppliers',
+  assetOwnerships: 'config_assetOwnerships',
 };
 
 // ── Generic helpers ──
@@ -83,6 +92,11 @@ export function getSuppliers() {
   return load<{ cn: string; en: string }[]>(KEYS.suppliers, DEFAULT_SUPPLIERS);
 }
 export function setSuppliers(v: { cn: string; en: string }[]) { save(KEYS.suppliers, v); }
+
+export function getAssetOwnerships() {
+  return load<{ cn: string; en: string }[]>(KEYS.assetOwnerships, DEFAULT_ASSET_OWNERSHIPS);
+}
+export function setAssetOwnerships(v: { cn: string; en: string }[]) { save(KEYS.assetOwnerships, v); }
 
 // ── Re-export helpers ──
 export { BUS };

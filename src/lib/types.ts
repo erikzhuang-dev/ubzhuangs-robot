@@ -44,6 +44,7 @@ export interface Mold {
   commissionDate?: string; // 启用时间
   depreciationYears?: number; // 折旧年数
   assetOwnership?: string; // 资产归属
+  assetOwnershipEn?: string; // 资产归属(英文)
   status: 'active' | 'maintenance' | 'retired' | 'pending';
 }
 

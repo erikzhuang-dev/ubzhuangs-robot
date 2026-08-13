@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { BUS, INITIAL_MOLDS, ASSET_OWNERSHIPS } from '@/lib/mock-data';
+import { BUS, INITIAL_MOLDS } from '@/lib/mock-data';
 import {
-  getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers,
+  getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers, getAssetOwnerships,
 } from '@/lib/config-store';
 import type { Mold, Product } from '@/lib/types';
 import { translateMoldName } from '@/lib/translator';
@@ -307,6 +307,7 @@ export default function Home() {
   const [materials, setMaterials] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<{ cn: string; en: string }[]>([]);
+  const [assetOwnerships, setAssetOwnerships] = useState<{ cn: string; en: string }[]>([]);
   const [moldsLoaded, setMoldsLoaded] = useState(false);
 
   // Load molds from localStorage on mount (client-side only to avoid hydration mismatch)
@@ -343,6 +344,7 @@ export default function Home() {
     setMaterials(getMaterials());
     setLocations(getLocations());
     setSuppliers(getSuppliers());
+    setAssetOwnerships(getAssetOwnerships());
   }, []);
 
   // Save molds to localStorage whenever they change (only after initial load completes,
@@ -473,7 +475,7 @@ export default function Home() {
       [L === 'zh' ? '模具厚(mm)' : 'Mold Thickness(mm)']: m.moldThickness,
       [L === 'zh' ? '所在地' : 'Location']: m.location,
       [L === 'zh' ? '模具类型' : 'Mold Type']: m.moldType === 'trial' ? (L === 'zh' ? '试验模' : 'Trial Mold') : (L === 'zh' ? '量产模' : 'Mass Production'),
-      [L === 'zh' ? '资产归属' : 'Asset Ownership']: m.assetOwnership || '',
+      [L === 'zh' ? '资产归属' : 'Asset Ownership']: L === 'zh' ? (m.assetOwnership || '') : (m.assetOwnershipEn || m.assetOwnership || ''),
       [L === 'zh' ? '启用时间' : 'Activation Date']: m.commissionDate || '',
       [L === 'zh' ? '折旧年数' : 'Depreciation Years']: m.depreciationYears ?? 0,
     }));
@@ -528,6 +530,7 @@ export default function Home() {
       location: newMold.location || '',
       moldType: newMold.moldType || 'mass',
       assetOwnership: newMold.assetOwnership || '',
+      assetOwnershipEn: newMold.assetOwnershipEn || '',
       theoreticalHourlyCapacity: newMold.theoreticalHourlyCapacity || 0,
       actualHourlyCapacity: newMold.actualHourlyCapacity || 0,
       theoreticalMonthlyCapacity: newMold.theoreticalMonthlyCapacity || 0,
@@ -574,6 +577,7 @@ export default function Home() {
       location: '',
       moldType: 'mass',
       assetOwnership: '',
+      assetOwnershipEn: '',
       theoreticalHourlyCapacity: 0,
       actualHourlyCapacity: 0,
       theoreticalMonthlyCapacity: 0,
@@ -917,7 +921,16 @@ export default function Home() {
                             if (mt === 'trial' || mt === '试验模' || mt === 'Trial Mold') return 'trial';
                             return 'mass';
                           })(),
-                          assetOwnership: String(row['Asset Ownership'] || row['资产归属'] || ''),
+                          assetOwnership: (() => {
+                            const raw = String(row['Asset Ownership'] || row['资产归属'] || '');
+                            const match = getAssetOwnerships().find((a) => a.cn === raw || a.en === raw);
+                            return match ? match.cn : raw;
+                          })(),
+                          assetOwnershipEn: (() => {
+                            const raw = String(row['Asset Ownership'] || row['资产归属'] || '');
+                            const match = getAssetOwnerships().find((a) => a.cn === raw || a.en === raw);
+                            return match ? match.en : raw;
+                          })(),
                           theoreticalHourlyCapacity: Number(row['Theoretical Hourly Output'] || row['理论每小时产能'] || 0),
                           actualHourlyCapacity: Number(row['Actual Hourly Output'] || row['实际每小时产能'] || 0),
                           theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能(万)'] || row['理论月产能'] || 0),
@@ -1003,6 +1016,7 @@ export default function Home() {
                     materials={materials}
                     locations={locations}
                     suppliers={suppliers}
+                    assetOwnerships={assetOwnerships}
                   />
                 );
               })}
@@ -1029,6 +1043,7 @@ export default function Home() {
             materials={materials}
             locations={locations}
             suppliers={suppliers}
+            assetOwnerships={assetOwnerships}
           />
         )}
 
@@ -1458,6 +1473,7 @@ function MoldRow({
   materials,
   locations,
   suppliers,
+  assetOwnerships,
 }: {
   mold: Mold;
   isExpanded: boolean;
@@ -1475,6 +1491,7 @@ function MoldRow({
   materials: string[];
   locations: string[];
   suppliers: { cn: string; en: string }[];
+  assetOwnerships: { cn: string; en: string }[];
 }) {
   const t = T[lang];
   const totalPrice = mold.quantity * mold.unitPrice;
@@ -1705,19 +1722,31 @@ function MoldRow({
                     </DetailField>
                     <DetailField label={t.assetOwnership}>
                       <select
-                        value={mold.assetOwnership ?? ''}
-                        onChange={(e) => onUpdate(mold.id, 'assetOwnership', e.target.value)}
+                        value={lang === 'en' ? (mold.assetOwnershipEn || mold.assetOwnership || '') : (mold.assetOwnership || '')}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const ao = assetOwnerships.find((a) => (lang === 'en' ? a.en : a.cn) === val);
+                          onUpdate(mold.id, lang === 'en' ? 'assetOwnershipEn' : 'assetOwnership', val);
+                          if (ao) {
+                            onUpdate(mold.id, lang === 'en' ? 'assetOwnership' : 'assetOwnershipEn', lang === 'en' ? ao.cn : ao.en);
+                          } else {
+                            onUpdate(mold.id, lang === 'en' ? 'assetOwnership' : 'assetOwnershipEn', val);
+                          }
+                        }}
                         className="detail-input"
                       >
                         <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
-                        {ASSET_OWNERSHIPS.map((ao) => (
-                          <option key={ao} value={ao}>
-                            {ao}
+                        {assetOwnerships.map((ao) => (
+                          <option key={ao.cn} value={lang === 'en' ? ao.en : ao.cn}>
+                            {lang === 'en' ? ao.en : ao.cn}
                           </option>
                         ))}
-                        {mold.assetOwnership && !ASSET_OWNERSHIPS.includes(mold.assetOwnership) && (
-                          <option value={mold.assetOwnership}>{mold.assetOwnership}</option>
-                        )}
+                        {(() => {
+                          const cur = lang === 'en' ? (mold.assetOwnershipEn || mold.assetOwnership || '') : (mold.assetOwnership || '');
+                          return cur && !assetOwnerships.some((a) => (lang === 'en' ? a.en : a.cn) === cur) && (
+                            <option value={cur}>{cur}</option>
+                          );
+                        })()}
                       </select>
                     </DetailField>
                     <div className="pt-2">
@@ -2064,6 +2093,7 @@ function AddMoldModal({
   materials,
   locations,
   suppliers,
+  assetOwnerships,
 }: {
   newMold: Partial<Mold>;
   onUpdate: (field: keyof Mold, value: unknown) => void;
@@ -2076,6 +2106,7 @@ function AddMoldModal({
   materials: string[];
   locations: string[];
   suppliers: { cn: string; en: string }[];
+  assetOwnerships: { cn: string; en: string }[];
 }) {
   const t = T[lang];
   const totalPrice = (newMold.quantity || 1) * (newMold.unitPrice || 0);
@@ -2272,14 +2303,23 @@ function AddMoldModal({
                 </DetailField>
                 <DetailField label={t.assetOwnership}>
                   <select
-                    value={newMold.assetOwnership ?? ''}
-                    onChange={(e) => onUpdate('assetOwnership', e.target.value)}
+                    value={lang === 'en' ? (newMold.assetOwnershipEn || '') : (newMold.assetOwnership || '')}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const ao = assetOwnerships.find((a) => (lang === 'en' ? a.en : a.cn) === val);
+                      onUpdate(lang === 'en' ? 'assetOwnershipEn' : 'assetOwnership', val);
+                      if (ao) {
+                        onUpdate(lang === 'en' ? 'assetOwnership' : 'assetOwnershipEn', lang === 'en' ? ao.cn : ao.en);
+                      } else {
+                        onUpdate(lang === 'en' ? 'assetOwnership' : 'assetOwnershipEn', val);
+                      }
+                    }}
                     className="detail-input"
                   >
                     <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
-                    {ASSET_OWNERSHIPS.map((ao) => (
-                      <option key={ao} value={ao}>
-                        {ao}
+                    {assetOwnerships.map((ao) => (
+                      <option key={ao.cn} value={lang === 'en' ? ao.en : ao.cn}>
+                        {lang === 'en' ? ao.en : ao.cn}
                       </option>
                     ))}
                   </select>

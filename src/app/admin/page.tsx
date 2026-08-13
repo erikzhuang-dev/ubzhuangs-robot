@@ -10,10 +10,11 @@ import {
   getMaterials, setMaterials,
   getLocations, setLocations,
   getSuppliers, setSuppliers,
+  getAssetOwnerships, setAssetOwnerships,
 } from '@/lib/config-store';
 import type { Product } from '@/lib/types';
 
-type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers';
+type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships';
 type Lang = 'en' | 'zh';
 
 const translations = {
@@ -30,12 +31,14 @@ const translations = {
     materials: 'Materials',
     locations: 'Locations',
     suppliers: 'Suppliers',
+    assetOwnerships: 'Asset Ownership',
     factoryList: 'Factory List',
     productList: 'Product List',
     runnerList: 'Runner Type List',
     materialList: 'Material List',
     locationList: 'Location List',
     supplierList: 'Supplier List',
+    assetOwnershipList: 'Asset Ownership List',
     add: '+ Add',
     chineseName: 'Chinese Name',
     englishName: 'English Name',
@@ -63,12 +66,14 @@ const translations = {
     materials: '产品材料',
     locations: '所在地',
     suppliers: '供应商',
+    assetOwnerships: '资产归属',
     factoryList: '工厂列表',
     productList: '产品列表',
     runnerList: '流道类型列表',
     materialList: '产品材料列表',
     locationList: '所在地列表',
     supplierList: '供应商列表',
+    assetOwnershipList: '资产归属列表',
     add: '+ 添加',
     chineseName: '中文名',
     englishName: '英文名',
@@ -85,7 +90,7 @@ const translations = {
   },
 };
 
-const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers'];
+const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships'];
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('factories');
@@ -96,6 +101,7 @@ export default function AdminPage() {
   const [materials, setMaterialsState] = useState<string[]>([]);
   const [locations, setLocationsState] = useState<string[]>([]);
   const [suppliers, setSuppliersState] = useState<{ cn: string; en: string }[]>([]);
+  const [assetOwnerships, setAssetOwnershipsState] = useState<{ cn: string; en: string }[]>([]);
   const [saved, setSaved] = useState(true);
 
   // Login state
@@ -158,6 +164,7 @@ export default function AdminPage() {
       setMaterialsState(getMaterials());
       setLocationsState(getLocations());
       setSuppliersState(getSuppliers());
+      setAssetOwnershipsState(getAssetOwnerships());
     }
   }, [loggedIn]);
 
@@ -281,6 +288,7 @@ export default function AdminPage() {
     setMaterials(materials);
     setLocations(locations);
     setSuppliers(suppliers);
+    setAssetOwnerships(assetOwnerships);
     setSaved(true);
   };
 
@@ -415,8 +423,17 @@ export default function AdminPage() {
           {tab === 'suppliers' && (
             <SupplierList
               lang={lang}
+              title={t.supplierList}
               items={suppliers}
               onChange={(v) => { setSuppliersState(v); markDirty(); }}
+            />
+          )}
+          {tab === 'assetOwnerships' && (
+            <SupplierList
+              lang={lang}
+              title={t.assetOwnershipList}
+              items={assetOwnerships}
+              onChange={(v) => { setAssetOwnershipsState(v); markDirty(); }}
             />
           )}
         </div>
@@ -565,10 +582,12 @@ function ProductList({
 // ── Supplier list (cn + en) ──
 function SupplierList({
   lang,
+  title,
   items,
   onChange,
 }: {
   lang: Lang;
+  title: string;
   items: { cn: string; en: string }[];
   onChange: (v: { cn: string; en: string }[]) => void;
 }) {
@@ -584,7 +603,7 @@ function SupplierList({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.supplierList}</h3>
+        <h3 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{title}</h3>
         <button
           onClick={add}
           className="flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors hover:opacity-90"

@@ -69,7 +69,13 @@ const MATERIALS = ['PP', 'PE', 'PC', 'ABS', 'PS', 'PVC', 'PMMA', 'POM', 'PA66', 
 const STATUSES: Mold['status'][] = ['active', 'active', 'active', 'active', 'maintenance', 'retired', 'pending'];
 const LOCATIONS = ['苏州', '昆山', '东莞', '深圳', '宁波', '常州', '上海', '无锡', '台州', '厦门'];
 
-export const ASSET_OWNERSHIPS = ['千禧光', '龙德', '普昂', '稳健', '凯乐'];
+export const ASSET_OWNERSHIPS = [
+  { cn: '千禧光', en: 'Qianxiguang' },
+  { cn: '龙德', en: 'Longde' },
+  { cn: '普昂', en: 'Puang' },
+  { cn: '稳健', en: 'Wenjian' },
+  { cn: '凯乐', en: 'Kaile' },
+];
 
 function seededRandom(seed: number): () => number {
   let s = seed;
@@ -98,6 +104,7 @@ function generateMolds(): Mold[] {
       const lossCoeff = rand() < 0.7 ? 0.05 : Math.round((rand() * 0.1 + 0.02) * 100) / 100;
 
       const supplier = SUPPLIERS[Math.floor(rand() * SUPPLIERS.length)];
+      const assetOwner = ASSET_OWNERSHIPS[Math.floor(rand() * ASSET_OWNERSHIPS.length)];
       const mold: Mold = {
         id: `m${String(moldIndex).padStart(3, '0')}`,
         code: `M${bu.id.toUpperCase().replace('BU', '')}-${String(moldIndex).padStart(4, '0')}`,
@@ -135,7 +142,8 @@ function generateMolds(): Mold[] {
         moldThickness: Math.round(rand() * 200 + 100),
         location: LOCATIONS[Math.floor(rand() * LOCATIONS.length)],
         moldType: rand() > 0.3 ? 'mass' : 'trial',
-        assetOwnership: ASSET_OWNERSHIPS[Math.floor(rand() * ASSET_OWNERSHIPS.length)],
+        assetOwnership: assetOwner.cn,
+        assetOwnershipEn: assetOwner.en,
         theoreticalHourlyCapacity: 0,
         actualHourlyCapacity: 0,
         theoreticalMonthlyCapacity: 0,
