@@ -986,6 +986,7 @@ export default function Home() {
             <thead>
               <tr style={{ backgroundColor: '#f0f7ec' }}>
                 <th className="w-10 px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}></th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.belongProduct}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.name}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.status}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
@@ -1516,6 +1517,14 @@ function MoldRow({
               <path d="M4 2l4 4-4 4" stroke="#6b7c6b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
+          {(() => {
+            const product = products.find((p) => p.id === mold.productId);
+            return lang === 'en'
+              ? (product?.nameEn || product?.name || mold.productNameEn || mold.productName || '')
+              : (product?.name || mold.productName || '');
+          })()}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
           {lang === 'en' ? (mold.nameEn || mold.name) : mold.name}
