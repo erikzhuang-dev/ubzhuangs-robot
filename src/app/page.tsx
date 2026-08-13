@@ -111,6 +111,8 @@ const T = {
     actualOutput: '实际产出',
     hourlyOutputTheory: '理论每小时产能',
     hourlyOutputActual: '实际每小时产能',
+    dailyOutputActual: '实际24H产能',
+    capacityUnitDay: '件/天',
     monthlyCapacityTheory: '理论月产能(万)',
     monthlyCapacityActual: '实际月产能(万)',
     depreciationYears: '折旧年数',
@@ -209,6 +211,8 @@ const T = {
     actualOutput: 'Actual Output',
     hourlyOutputTheory: 'Theoretical Hourly Output',
     hourlyOutputActual: 'Actual Hourly Output',
+    dailyOutputActual: 'Actual 24H Output',
+    capacityUnitDay: 'pcs/day',
     monthlyCapacityTheory: 'Theoretical Monthly Capacity(10k)',
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
     depreciationYears: 'Depreciation Years',
@@ -1843,7 +1847,7 @@ function MoldRow({
                         />
                       </DetailField>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <DetailField label={t.hourlyOutputTheory}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
@@ -1858,6 +1862,14 @@ function MoldRow({
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
                         >
                           {mold.actualHourlyCapacity ?? 0} <span className="ml-1 text-xs">{t.capacityUnit}</span>
+                        </div>
+                      </DetailField>
+                      <DetailField label={t.dailyOutputActual}>
+                        <div
+                          className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
+                          style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
+                        >
+                          {(mold.actualHourlyCapacity ?? 0) * 24} <span className="ml-1 text-xs">{t.capacityUnitDay}</span>
                         </div>
                       </DetailField>
                     </div>
