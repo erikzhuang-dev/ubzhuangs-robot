@@ -446,7 +446,8 @@ export default function Home() {
       [L === 'zh' ? '所属BU' : 'Business Unit']: BUS.find((b) => b.id === m.buId)?.name || '',
       [L === 'zh' ? '所属产品' : 'Product']: (() => {
         const p = products.find((pp) => pp.id === m.productId);
-        return L === 'zh' ? (p?.name || '') : (p?.nameEn || p?.name || '');
+        if (p) return L === 'zh' ? (p.name || '') : (p.nameEn || p.name || '');
+        return L === 'zh' ? (m.productName || '') : (m.productNameEn || m.productName || '');
       })(),
       [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
       [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_NAME_MAP[m.runnerType]?.[L] || m.runnerType,
@@ -862,9 +863,11 @@ export default function Home() {
                           const codePrefix = code.match(/M(\d)/)?.[1];
                           bu = BUS.find((b) => b.id === `bu${codePrefix}`);
                         }
+                        const productCandidates = [row['Product'], row['产品'], row['所属产品']]
+                          .map((v) => String(v ?? '').trim())
+                          .filter(Boolean);
                         const product = products.find(
-                          (p) => p.name === row['Product'] || p.nameEn === row['Product'] || p.name === row['产品'] || p.nameEn === row['产品']
-                            || p.name === row['所属产品'] || p.nameEn === row['所属产品']
+                          (p) => productCandidates.some((c) => p.name.trim() === c || (p.nameEn || '').trim() === c)
                         );
                         const statusStr = String(row['Status'] || row['状态'] || 'active').toLowerCase();
                         const statusMap: Record<string, string> = {
@@ -1586,14 +1589,26 @@ function MoldRow({
                     <DetailField label={t.belongProduct}>
                       <select
                         value={mold.productId}
-                        onChange={(e) => onUpdate(mold.id, 'productId', e.target.value)}
+                        onChange={(e) => {
+                          const productId = e.target.value;
+                          const product = products.find((p) => p.id === productId);
+                          onUpdate(mold.id, 'productId', productId);
+                          onUpdate(mold.id, 'productName', product?.name || '');
+                          onUpdate(mold.id, 'productNameEn', product?.nameEn || '');
+                        }}
                         className="detail-input"
                       >
+                        <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
                         {products.filter((p) => p.buId === mold.buId).map((p) => (
                           <option key={p.id} value={p.id}>
                             {lang === 'en' ? (p.nameEn || p.name) : p.name}
                           </option>
                         ))}
+                        {mold.productId && !products.some((p) => p.id === mold.productId) && (
+                          <option value={mold.productId}>
+                            {lang === 'en' ? (mold.productNameEn || mold.productName || mold.productId) : (mold.productName || mold.productId)}
+                          </option>
+                        )}
                       </select>
                     </DetailField>
                     <DetailField label={t.moldCode}>
