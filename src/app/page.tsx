@@ -1537,14 +1537,6 @@ function MoldRow({
                     {t.basicInfo}
                   </h4>
                   <div className="space-y-3">
-                    <DetailField label={t.moldCode}>
-                      <input
-                        type="text"
-                        value={mold.code}
-                        onChange={(e) => onUpdate(mold.id, 'code', e.target.value)}
-                        className="detail-input"
-                      />
-                    </DetailField>
                     <DetailField label={t.detailName}>
                       <input
                         type="text"
@@ -1558,6 +1550,27 @@ function MoldRow({
                         type="text"
                         value={mold.projectNumber || ''}
                         onChange={(e) => onUpdate(mold.id, 'projectNumber', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
+                    <DetailField label={t.belongProduct}>
+                      <select
+                        value={mold.productId}
+                        onChange={(e) => onUpdate(mold.id, 'productId', e.target.value)}
+                        className="detail-input"
+                      >
+                        {products.filter((p) => p.buId === mold.buId).map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {lang === 'en' ? (p.nameEn || p.name) : p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </DetailField>
+                    <DetailField label={t.moldCode}>
+                      <input
+                        type="text"
+                        value={mold.code}
+                        onChange={(e) => onUpdate(mold.id, 'code', e.target.value)}
                         className="detail-input"
                       />
                     </DetailField>
@@ -1591,19 +1604,6 @@ function MoldRow({
                         {BUS.map((bu) => (
                           <option key={bu.id} value={bu.id}>
                             {bu.name}
-                          </option>
-                        ))}
-                      </select>
-                    </DetailField>
-                    <DetailField label={t.belongProduct}>
-                      <select
-                        value={mold.productId}
-                        onChange={(e) => onUpdate(mold.id, 'productId', e.target.value)}
-                        className="detail-input"
-                      >
-                        {products.filter((p) => p.buId === mold.buId).map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {lang === 'en' ? (p.nameEn || p.name) : p.name}
                           </option>
                         ))}
                       </select>
