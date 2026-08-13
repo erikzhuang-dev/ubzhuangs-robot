@@ -6,6 +6,7 @@ import {
   getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers,
 } from '@/lib/config-store';
 import type { Mold, Product } from '@/lib/types';
+import { translateMoldName } from '@/lib/translator';
 import * as XLSX from 'xlsx';
 import Analysis from '@/components/Analysis';
 
@@ -48,6 +49,8 @@ const T = {
     moldCode: '模具编号',
     projectNumber: '项目编号',
     detailName: '名称',
+    moldNameZh: '模具中文名',
+    moldNameEnLabel: '模具英文名',
     detailSupplier: '供应商',
     belongBU: '所属BU',
     belongProduct: '所属产品',
@@ -150,6 +153,8 @@ const T = {
     moldCode: 'Mold Code',
     projectNumber: 'Project Number',
     detailName: 'Name',
+    moldNameZh: 'Mold Name (CN)',
+    moldNameEnLabel: 'Mold Name (EN)',
     detailSupplier: 'Supplier',
     belongBU: 'Business Unit',
     belongProduct: 'Product',
@@ -432,7 +437,8 @@ export default function Home() {
     const exportData = filteredMolds.map((m) => ({
       [L === 'zh' ? '模具编号' : 'Mold Code']: m.code,
       [L === 'zh' ? '项目编号' : 'Project Number']: m.projectNumber || '',
-      [L === 'zh' ? '模具名称' : 'Mold Name']: L === 'zh' ? m.name : (m.nameEn || m.name),
+      [L === 'zh' ? '模具名称' : 'Mold Name']: m.name,
+      [L === 'zh' ? '模具英文名' : 'Mold Name EN']: m.nameEn || '',
       [L === 'zh' ? '供应商' : 'Supplier']: L === 'zh' ? m.supplier : (m.supplierEn || m.supplier),
       [L === 'zh' ? '工厂' : 'Factory']: m.factory,
       [L === 'zh' ? '所属BU' : 'Business Unit']: BUS.find((b) => b.id === m.buId)?.name || '',
@@ -489,7 +495,7 @@ export default function Home() {
       code: newMold.code || autoCode,
       projectNumber: newMold.projectNumber || '',
       name: newMold.name || '',
-      nameEn: newMold.nameEn || '',
+      nameEn: newMold.nameEn || translateMoldName(newMold.name || ''),
       supplier: newMold.supplier || '',
       supplierEn: newMold.supplierEn || '',
       factory: newMold.factory || 'LD',
@@ -874,7 +880,7 @@ export default function Home() {
                           id: code || `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                           code: String(code),
                           name: String(row['Mold Name'] || row['模具名称'] || ''),
-                          nameEn: String(row['Mold Name'] || row['模具名称'] || ''),
+                          nameEn: String(row['Mold Name EN'] || row['Mold Name (EN)'] || row['模具英文名'] || row['英文名'] || '') || translateMoldName(String(row['Mold Name'] || row['模具名称'] || '')),
                           supplier: String(row['Supplier'] || row['供应商'] || ''),
                           supplierEn: String(row['Supplier'] || row['供应商'] || ''),
                           buId: bu?.id || 'bu1',
@@ -1528,11 +1534,27 @@ function MoldRow({
                     {t.basicInfo}
                   </h4>
                   <div className="space-y-3">
-                    <DetailField label={t.detailName}>
+                    <DetailField label={t.moldNameZh}>
                       <input
                         type="text"
-                        value={lang === 'en' ? (mold.nameEn || mold.name) : mold.name}
-                        onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'nameEn' : 'name', e.target.value)}
+                        value={mold.name}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const prevAuto = translateMoldName(mold.name);
+                          onUpdate(mold.id, 'name', val);
+                          // 英文名称为空或仍是上次的自动翻译结果时，同步自动翻译
+                          if (!mold.nameEn || mold.nameEn === prevAuto) {
+                            onUpdate(mold.id, 'nameEn', translateMoldName(val));
+                          }
+                        }}
+                        className="detail-input"
+                      />
+                    </DetailField>
+                    <DetailField label={t.moldNameEnLabel}>
+                      <input
+                        type="text"
+                        value={mold.nameEn || ''}
+                        onChange={(e) => onUpdate(mold.id, 'nameEn', e.target.value)}
                         className="detail-input"
                       />
                     </DetailField>
@@ -2083,11 +2105,26 @@ function AddMoldModal({
                 {t.basicInfo}
               </h4>
               <div className="space-y-3">
-                <DetailField label={t.detailName}>
+                <DetailField label={t.moldNameZh}>
                   <input
                     type="text"
-                    value={lang === 'en' ? (newMold.nameEn || '') : (newMold.name || '')}
-                    onChange={(e) => onUpdate(lang === 'en' ? 'nameEn' : 'name', e.target.value)}
+                    value={newMold.name || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const prevAuto = translateMoldName(newMold.name || '');
+                      onUpdate('name', val);
+                      if (!newMold.nameEn || newMold.nameEn === prevAuto) {
+                        onUpdate('nameEn', translateMoldName(val));
+                      }
+                    }}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.moldNameEnLabel}>
+                  <input
+                    type="text"
+                    value={newMold.nameEn || ''}
+                    onChange={(e) => onUpdate('nameEn', e.target.value)}
                     className="detail-input"
                   />
                 </DetailField>

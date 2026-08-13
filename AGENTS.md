@@ -25,6 +25,7 @@ src/
 ├── lib/
 │   ├── types.ts            # 类型定义（Mold, Product, BU, Factory）
 │   ├── mock-data.ts        # 模拟数据（4BU, 5工厂, 30产品, 180模具）
+│   ├── translator.ts       # 模具名称中→英自动翻译（词汇映射表+通用规则）
 │   ├── config-store.ts     # 配置数据持久化（localStorage读写工厂/产品等列表）
 │   └── utils.ts            # 通用工具函数
 └── components/ui/          # shadcn/ui 组件库
