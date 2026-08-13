@@ -964,13 +964,12 @@ export default function Home() {
             <thead>
               <tr style={{ backgroundColor: '#f0f7ec' }}>
                 <th className="w-10 px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}></th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.code}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.name}</th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.oee}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.status}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.code}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.unitPrice}</th>
               </tr>
             </thead>
@@ -1492,33 +1491,25 @@ function MoldRow({
             </svg>
           </span>
         </td>
-        <td className="px-3 py-3 text-sm font-medium" style={{ color: '#2d3b2d' }}>
-          {mold.code}
-        </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
           {lang === 'en' ? (mold.nameEn || mold.name) : mold.name}
-        </td>
-        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
-          {lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
-        </td>
-        <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
-          {mold.factory}
-        </td>
-        <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
-          {mold.cavities}
-        </td>
-        <td className="px-3 py-3 text-sm">
-          <span
-            className={mold.oee < 0.9 ? 'font-semibold text-red-600' : ''}
-            style={{ color: mold.oee < 0.9 ? undefined : '#2d3b2d' }}
-          >
-            {(mold.oee * 100).toFixed(1)}%
-          </span>
         </td>
         <td className="px-3 py-3 text-sm">
           <span className={`rounded-full px-2 py-0.5 text-xs ${statusColor}`}>
             {statusLabel}
           </span>
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
+          {mold.factory}
+        </td>
+        <td className="px-3 py-3 text-sm font-medium" style={{ color: '#2d3b2d' }}>
+          {mold.code}
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
+          {lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
+          {mold.cavities}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
           ¥{mold.unitPrice.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
