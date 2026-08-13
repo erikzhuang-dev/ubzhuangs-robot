@@ -1671,6 +1671,23 @@ function MoldRow({
                         ))}
                       </select>
                     </DetailField>
+                    <DetailField label={t.location}>
+                      <select
+                        value={mold.location || ''}
+                        onChange={(e) => onUpdate(mold.id, 'location', e.target.value)}
+                        className="detail-input"
+                      >
+                        <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                        {locations.map((loc) => (
+                          <option key={loc} value={loc}>
+                            {loc}
+                          </option>
+                        ))}
+                        {mold.location && !locations.includes(mold.location) && (
+                          <option value={mold.location}>{mold.location}</option>
+                        )}
+                      </select>
+                    </DetailField>
                     <DetailField label={t.status}>
                       <select
                         value={mold.status}
@@ -2259,6 +2276,20 @@ function AddMoldModal({
                     {factories.map((f) => (
                       <option key={f} value={f}>
                         {f}
+                      </option>
+                    ))}
+                  </select>
+                </DetailField>
+                <DetailField label={t.location}>
+                  <select
+                    value={newMold.location || ''}
+                    onChange={(e) => onUpdate('location', e.target.value)}
+                    className="detail-input"
+                  >
+                    <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                    {locations.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
                       </option>
                     ))}
                   </select>
