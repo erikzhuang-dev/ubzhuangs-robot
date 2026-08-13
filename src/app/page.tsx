@@ -998,6 +998,7 @@ export default function Home() {
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.unitPrice}</th>
+                <th className="w-10 px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -1504,6 +1505,26 @@ function MoldRow({
   const t = T[lang];
   const totalPrice = mold.quantity * mold.unitPrice;
 
+  // 漏填字段检查（详情页关键字段）
+  const missingFields: string[] = [
+    [t.moldNameZh, !mold.name?.trim()],
+    [t.moldNameEnLabel, !mold.nameEn?.trim()],
+    [t.projectNumber, !mold.projectNumber?.trim()],
+    [t.belongProduct, !mold.productId],
+    [t.moldCode, !mold.code?.trim()],
+    [t.detailSupplier, !mold.supplier?.trim()],
+    [t.location, !mold.location?.trim()],
+    [t.assetOwnership, !mold.assetOwnership?.trim()],
+    [t.material, !mold.material?.trim()],
+    [t.runnerType, !mold.runnerType?.trim()],
+    [t.activationDate, !mold.commissionDate],
+    [t.cavities, !mold.cavities || mold.cavities <= 0],
+    [t.cycleTime, !mold.cycleTime || mold.cycleTime <= 0],
+    [t.unitPrice, !mold.unitPrice || mold.unitPrice <= 0],
+    [t.quantity, !mold.quantity || mold.quantity <= 0],
+    [t.moldSize, !mold.moldLength || !mold.moldWidth || !mold.moldThickness],
+  ].filter(([, miss]) => miss).map(([label]) => label as string);
+
   return (
     <>
       {/* Main row */}
@@ -1553,12 +1574,21 @@ function MoldRow({
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
           ¥{mold.unitPrice.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
         </td>
+        <td className="w-10 px-3 py-3 text-sm">
+          {missingFields.length > 0 && (
+            <span
+              className="block h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: '#f39c12' }}
+              title={(lang === 'zh' ? '漏填字段：' : 'Missing fields: ') + missingFields.join(lang === 'zh' ? '、' : ', ')}
+            />
+          )}
+        </td>
       </tr>
 
       {/* Expanded detail */}
       {isExpanded && (
         <tr>
-          <td colSpan={9} className="p-0">
+          <td colSpan={10} className="p-0">
             <div className="px-6 py-5" style={{ backgroundColor: '#f0f7ec' }}>
               <div className="grid grid-cols-2 gap-8">
                 {/* Left column - Basic Info */}
