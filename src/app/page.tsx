@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { BUS, INITIAL_MOLDS } from '@/lib/mock-data';
+import { BUS, INITIAL_MOLDS, ASSET_OWNERSHIPS } from '@/lib/mock-data';
 import {
   getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers,
 } from '@/lib/config-store';
@@ -112,6 +112,7 @@ const T = {
     monthlyCapacityActual: '实际月产能(万)',
     depreciationYears: '折旧年数',
     activationDate: '启用时间',
+    assetOwnership: '资产归属',
     deleteMold: '删除',
     confirmDeleteTitle: '确认删除',
     confirmDeleteMsg: '确认要删除此模具吗？',
@@ -207,6 +208,7 @@ const T = {
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
     depreciationYears: 'Depreciation Years',
     activationDate: 'Activation Date',
+    assetOwnership: 'Asset Ownership',
     deleteMold: 'Delete',
     confirmDeleteTitle: 'Confirm Delete',
     confirmDeleteMsg: 'Are you sure you want to delete this mold?',
@@ -465,6 +467,7 @@ export default function Home() {
       [L === 'zh' ? '模具厚(mm)' : 'Mold Thickness(mm)']: m.moldThickness,
       [L === 'zh' ? '所在地' : 'Location']: m.location,
       [L === 'zh' ? '模具类型' : 'Mold Type']: m.moldType === 'trial' ? (L === 'zh' ? '试验模' : 'Trial Mold') : (L === 'zh' ? '量产模' : 'Mass Production'),
+      [L === 'zh' ? '资产归属' : 'Asset Ownership']: m.assetOwnership || '',
       [L === 'zh' ? '启用时间' : 'Activation Date']: m.commissionDate || '',
       [L === 'zh' ? '折旧年数' : 'Depreciation Years']: m.depreciationYears ?? 0,
     }));
@@ -518,6 +521,7 @@ export default function Home() {
       moldThickness: newMold.moldThickness || 0,
       location: newMold.location || '',
       moldType: newMold.moldType || 'mass',
+      assetOwnership: newMold.assetOwnership || '',
       theoreticalHourlyCapacity: newMold.theoreticalHourlyCapacity || 0,
       actualHourlyCapacity: newMold.actualHourlyCapacity || 0,
       theoreticalMonthlyCapacity: newMold.theoreticalMonthlyCapacity || 0,
@@ -563,6 +567,7 @@ export default function Home() {
       moldThickness: 0,
       location: '',
       moldType: 'mass',
+      assetOwnership: '',
       theoreticalHourlyCapacity: 0,
       actualHourlyCapacity: 0,
       theoreticalMonthlyCapacity: 0,
@@ -906,6 +911,7 @@ export default function Home() {
                             if (mt === 'trial' || mt === '试验模' || mt === 'Trial Mold') return 'trial';
                             return 'mass';
                           })(),
+                          assetOwnership: String(row['Asset Ownership'] || row['资产归属'] || ''),
                           theoreticalHourlyCapacity: Number(row['Theoretical Hourly Output'] || row['理论每小时产能'] || 0),
                           actualHourlyCapacity: Number(row['Actual Hourly Output'] || row['实际每小时产能'] || 0),
                           theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能(万)'] || row['理论月产能'] || 0),
@@ -1539,19 +1545,19 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label={t.projectNumber}>
-                      <input
-                        type="text"
-                        value={mold.projectNumber || ''}
-                        onChange={(e) => onUpdate(mold.id, 'projectNumber', e.target.value)}
-                        className="detail-input"
-                      />
-                    </DetailField>
                     <DetailField label={t.detailName}>
                       <input
                         type="text"
                         value={lang === 'en' ? (mold.nameEn || mold.name) : mold.name}
                         onChange={(e) => onUpdate(mold.id, lang === 'en' ? 'nameEn' : 'name', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
+                    <DetailField label={t.projectNumber}>
+                      <input
+                        type="text"
+                        value={mold.projectNumber || ''}
+                        onChange={(e) => onUpdate(mold.id, 'projectNumber', e.target.value)}
                         className="detail-input"
                       />
                     </DetailField>
@@ -1682,6 +1688,23 @@ function MoldRow({
                       >
                         <option value="mass">{t.massProduction}</option>
                         <option value="trial">{t.trialMold}</option>
+                      </select>
+                    </DetailField>
+                    <DetailField label={t.assetOwnership}>
+                      <select
+                        value={mold.assetOwnership ?? ''}
+                        onChange={(e) => onUpdate(mold.id, 'assetOwnership', e.target.value)}
+                        className="detail-input"
+                      >
+                        <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                        {ASSET_OWNERSHIPS.map((ao) => (
+                          <option key={ao} value={ao}>
+                            {ao}
+                          </option>
+                        ))}
+                        {mold.assetOwnership && !ASSET_OWNERSHIPS.includes(mold.assetOwnership) && (
+                          <option value={mold.assetOwnership}>{mold.assetOwnership}</option>
+                        )}
                       </select>
                     </DetailField>
                     <div className="pt-2">
@@ -2217,6 +2240,20 @@ function AddMoldModal({
                   >
                     <option value="mass">{t.massProduction}</option>
                     <option value="trial">{t.trialMold}</option>
+                  </select>
+                </DetailField>
+                <DetailField label={t.assetOwnership}>
+                  <select
+                    value={newMold.assetOwnership ?? ''}
+                    onChange={(e) => onUpdate('assetOwnership', e.target.value)}
+                    className="detail-input"
+                  >
+                    <option value="">{lang === 'zh' ? '请选择' : 'Select'}</option>
+                    {ASSET_OWNERSHIPS.map((ao) => (
+                      <option key={ao} value={ao}>
+                        {ao}
+                      </option>
+                    ))}
                   </select>
                 </DetailField>
                 <DetailField label={t.activationDate}>

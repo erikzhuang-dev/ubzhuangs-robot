@@ -43,6 +43,7 @@ export interface Mold {
   actualMonthlyCapacity?: number; // 实际月产能(万)
   commissionDate?: string; // 启用时间
   depreciationYears?: number; // 折旧年数
+  assetOwnership?: string; // 资产归属
   status: 'active' | 'maintenance' | 'retired' | 'pending';
 }
 

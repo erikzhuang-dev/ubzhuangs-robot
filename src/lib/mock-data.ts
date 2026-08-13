@@ -69,6 +69,8 @@ const MATERIALS = ['PP', 'PE', 'PC', 'ABS', 'PS', 'PVC', 'PMMA', 'POM', 'PA66', 
 const STATUSES: Mold['status'][] = ['active', 'active', 'active', 'active', 'maintenance', 'retired', 'pending'];
 const LOCATIONS = ['苏州', '昆山', '东莞', '深圳', '宁波', '常州', '上海', '无锡', '台州', '厦门'];
 
+export const ASSET_OWNERSHIPS = ['千禧光', '龙德', '普昂', '稳健', '凯乐'];
+
 function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
@@ -133,6 +135,7 @@ function generateMolds(): Mold[] {
         moldThickness: Math.round(rand() * 200 + 100),
         location: LOCATIONS[Math.floor(rand() * LOCATIONS.length)],
         moldType: rand() > 0.3 ? 'mass' : 'trial',
+        assetOwnership: ASSET_OWNERSHIPS[Math.floor(rand() * ASSET_OWNERSHIPS.length)],
         theoreticalHourlyCapacity: 0,
         actualHourlyCapacity: 0,
         theoreticalMonthlyCapacity: 0,
