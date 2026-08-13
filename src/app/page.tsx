@@ -2083,11 +2083,11 @@ function AddMoldModal({
                 {t.basicInfo}
               </h4>
               <div className="space-y-3">
-                <DetailField label={t.moldCode}>
+                <DetailField label={t.detailName}>
                   <input
                     type="text"
-                    value={newMold.code || ''}
-                    onChange={(e) => onUpdate('code', e.target.value)}
+                    value={lang === 'en' ? (newMold.nameEn || '') : (newMold.name || '')}
+                    onChange={(e) => onUpdate(lang === 'en' ? 'nameEn' : 'name', e.target.value)}
                     className="detail-input"
                   />
                 </DetailField>
@@ -2099,11 +2099,11 @@ function AddMoldModal({
                     className="detail-input"
                   />
                 </DetailField>
-                <DetailField label={t.detailName}>
+                <DetailField label={t.moldCode}>
                   <input
                     type="text"
-                    value={lang === 'en' ? (newMold.nameEn || '') : (newMold.name || '')}
-                    onChange={(e) => onUpdate(lang === 'en' ? 'nameEn' : 'name', e.target.value)}
+                    value={newMold.code || ''}
+                    onChange={(e) => onUpdate('code', e.target.value)}
                     className="detail-input"
                   />
                 </DetailField>
