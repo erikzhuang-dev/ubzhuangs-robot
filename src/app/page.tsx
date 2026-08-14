@@ -58,20 +58,20 @@ const T = {
     // Detail - right
     prodParams: '生产参数与成本',
     runnerType: '流道类型',
-    cycleTime: '注塑周期(s)',
+    cycleTime: '注塑周期(秒)',
     hourlyCapacity: '每小时产能',
     capacityUnit: '件/小时',
     oeeLowReason: 'OEE低于0.9的原因',
     oeeLowPlaceholder: '请填写OEE低于0.9的原因...',
-    quantity: '数量',
+    quantity: '数量(台)',
     unitPriceTax: '单价(含税)',
-    totalPrice: '合计价格',
-    lossCoeff: '模具损耗系数',
+    totalPrice: '合计金额',
+    lossCoeff: '损耗系数',
     modifyReason: '损耗原因',
     lossPlaceholder: '请填写修改损耗系数的原因...',
     material: '产品材料',
     materialLossCoeff: '材料损耗系数',
-    productWeight: '产品单只克重',
+    productWeight: '单只克重(g)',
     wasteWeight: '废料克重',
     sprueWeight: '水口料重量(g)',
     monthlyCapacity: '月产能(万)',
@@ -115,7 +115,7 @@ const T = {
     capacityUnitDay: '件/天',
     monthlyCapacityTheory: '理论月产能(万)',
     monthlyCapacityActual: '实际月产能(万)',
-    depreciationYears: '折旧年数',
+    depreciationYears: '寿命',
     activationDate: '启用时间',
     assetOwnership: '资产归属',
     deleteMold: '删除',
@@ -170,8 +170,8 @@ const T = {
     oeeLowPlaceholder: 'Please enter the reason for OEE below 0.9...',
     quantity: 'Quantity',
     unitPriceTax: 'Unit Price (incl. tax)',
-    totalPrice: 'Total Price',
-    lossCoeff: 'Mold Loss Coeff.',
+    totalPrice: 'Total Amount',
+    lossCoeff: 'Loss Coeff.',
     modifyReason: 'Reasons for Loss',
     lossPlaceholder: 'Please enter the reason for modifying loss coefficient...',
     material: 'Material',
@@ -215,7 +215,7 @@ const T = {
     capacityUnitDay: 'pcs/day',
     monthlyCapacityTheory: 'Theoretical Monthly Capacity(10k)',
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
-    depreciationYears: 'Depreciation Years',
+    depreciationYears: 'Lifetime',
     activationDate: 'Activation Date',
     assetOwnership: 'Asset Ownership',
     deleteMold: 'Delete',
@@ -455,21 +455,21 @@ export default function Home() {
       })(),
       [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
       [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_NAME_MAP[m.runnerType]?.[L] || m.runnerType,
-      [L === 'zh' ? '注塑周期(s)' : 'Cycle Time(s)']: m.cycleTime,
+      [L === 'zh' ? '注塑周期(秒)' : 'Cycle Time(s)']: m.cycleTime,
       [L === 'zh' ? '每小时产能' : 'Hourly Output']: m.hourlyCapacity,
       [L === 'zh' ? '理论每小时产能' : 'Theoretical Hourly Output']: m.theoreticalHourlyCapacity ?? 0,
       [L === 'zh' ? '实际每小时产能' : 'Actual Hourly Output']: m.actualHourlyCapacity ?? 0,
       'OEE': m.oee,
       [L === 'zh' ? 'OEE原因' : 'OEE Reason']: m.oeeReason || '',
       [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
-      [L === 'zh' ? '数量' : 'Quantity']: m.quantity,
+      [L === 'zh' ? '数量(台)' : 'Quantity']: m.quantity,
       [L === 'zh' ? '单价' : 'Unit Price']: m.unitPrice,
-      [L === 'zh' ? '合计价格' : 'Total Price']: m.totalPrice,
-      [L === 'zh' ? '模具损耗系数' : 'Mold Loss Coeff.']: m.lossCoefficient,
+      [L === 'zh' ? '合计金额' : 'Total Amount']: m.totalPrice,
+      [L === 'zh' ? '损耗系数' : 'Loss Coeff.']: m.lossCoefficient,
       [L === 'zh' ? '损耗原因' : 'Loss Reason']: m.lossReason || '',
       [L === 'zh' ? '产品材料' : 'Material']: m.material,
       [L === 'zh' ? '材料损耗系数' : 'Material Loss Coeff.']: m.materialLossCoeff,
-      [L === 'zh' ? '产品单只克重' : 'Product Weight(g)']: m.productWeight,
+      [L === 'zh' ? '单只克重(g)' : 'Product Weight(g)']: m.productWeight,
       [L === 'zh' ? '废料克重' : 'Waste Weight(g)']: m.wasteWeight,
       [L === 'zh' ? '水口料重量(g)' : 'Sprue Weight(g)']: m.sprueWeight,
       [L === 'zh' ? '月产能(万)' : 'Monthly Capacity(10k)']: m.monthlyCapacity,
@@ -482,7 +482,7 @@ export default function Home() {
       [L === 'zh' ? '模具类型' : 'Mold Type']: m.moldType === 'trial' ? (L === 'zh' ? '试验模' : 'Trial Mold') : (L === 'zh' ? '量产模' : 'Mass Production'),
       [L === 'zh' ? '资产归属' : 'Asset Ownership']: L === 'zh' ? (m.assetOwnership || '') : (m.assetOwnershipEn || m.assetOwnership || ''),
       [L === 'zh' ? '启用时间' : 'Activation Date']: m.commissionDate || '',
-      [L === 'zh' ? '折旧年数' : 'Depreciation Years']: m.depreciationYears ?? 0,
+      [L === 'zh' ? '寿命' : 'Lifetime']: m.depreciationYears ?? 0,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -901,20 +901,20 @@ export default function Home() {
                           factory: String(row['Factory'] || row['工厂'] || ''),
                           cavities: Number(row['Cavities'] || row['腔数'] || 1),
                           runnerType: String(row['Runner Type'] || row['流道类型'] || 'cold'),
-                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期(s)'] || row['注塑周期'] || 30),
+                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期(秒)'] || row['注塑周期(s)'] || row['注塑周期'] || 30),
                           hourlyCapacity: Number(row['Hourly Output'] || row['每小时产能'] || 0),
                           oee: Number(row['OEE'] || 0.9),
                           oeeReason: String(row['OEE Reason'] || row['OEE原因'] || ''),
                           oeeReasonEn: String(row['OEE Reason'] || row['OEE原因'] || ''),
-                          quantity: Number(row['Quantity'] || row['数量'] || 0),
+                          quantity: Number(row['Quantity'] || row['数量(台)'] || row['数量'] || 0),
                           unitPrice: Number(unitPriceStr) || 0,
-                          totalPrice: Number(row['Quantity'] || row['数量'] || 0) * (Number(unitPriceStr) || 0),
-                          lossCoefficient: Number(row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
+                          totalPrice: Number(row['Quantity'] || row['数量(台)'] || row['数量'] || 0) * (Number(unitPriceStr) || 0),
+                          lossCoefficient: Number(row['Loss Coeff.'] ?? row['损耗系数'] ?? row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
                           lossReason: String(row['Loss Reason'] || row['损耗原因'] || ''),
                           lossReasonEn: String(row['Loss Reason'] || row['损耗原因'] || ''),
                           material: String(row['Material'] ?? row['产品材料'] ?? row['材料'] ?? '').trim(),
                           materialLossCoeff: Number(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'] ?? 0),
-                          productWeight: Number(row['Product Weight(g)'] || row['产品单只克重'] || row['产品克重'] || 0),
+                          productWeight: Number(row['Product Weight(g)'] || row['单只克重(g)'] || row['产品单只克重'] || row['产品克重'] || 0),
                           scrapWeight: Number(row['Scrap Weight(g)'] || row['废料克重'] || 0),
                           wasteWeight: Number(row['Waste Weight(g)'] || row['废料克重'] || 0),
                           sprueWeight: Number(row['Sprue Weight(g)'] || row['水口料重量(g)'] || row['水口料重量'] || 0),
@@ -943,7 +943,7 @@ export default function Home() {
                           theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能(万)'] || row['理论月产能'] || 0),
                           actualMonthlyCapacity: Number(row['Actual Monthly Capacity(10k)'] || row['实际月产能(万)'] || row['实际月产能'] || 0),
                           commissionDate: String(row['Activation Date'] || row['启用时间'] || ''),
-                          depreciationYears: Number(row['Depreciation Years'] || row['折旧年数'] || 0),
+                          depreciationYears: Number(row['Lifetime'] || row['寿命'] || row['Depreciation Years'] || row['折旧年数'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
                         };
@@ -2045,14 +2045,7 @@ function MoldRow({
                         <input
                           type="date"
                           value={mold.commissionDate ?? ''}
-                          onChange={(e) => {
-                            const date = e.target.value;
-                            const today = new Date();
-                            const start = new Date(date);
-                            const years = date ? Math.floor((today.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
-                            onUpdate(mold.id, 'commissionDate', date);
-                            onUpdate(mold.id, 'depreciationYears', years);
-                          }}
+                          onChange={(e) => onUpdate(mold.id, 'commissionDate', e.target.value)}
                           className="detail-input"
                         />
                       </DetailField>
@@ -2076,12 +2069,13 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <DetailField label={t.depreciationYears}>
-                      <div
-                        className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
-                        style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
-                      >
-                        {mold.depreciationYears ?? 0} {lang === 'zh' ? '年' : 'years'}
-                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        value={mold.depreciationYears ?? 0}
+                        onChange={(e) => onUpdate(mold.id, 'depreciationYears', Number(e.target.value))}
+                        className="detail-input"
+                      />
                     </DetailField>
                   </div>
                 </div>
@@ -2425,14 +2419,16 @@ function AddMoldModal({
                   <input
                     type="date"
                     value={newMold.commissionDate ?? ''}
-                    onChange={(e) => {
-                      const date = e.target.value;
-                      const today = new Date();
-                      const start = new Date(date);
-                      const years = date ? Math.floor((today.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
-                      onUpdate('commissionDate', date);
-                      onUpdate('depreciationYears', years);
-                    }}
+                    onChange={(e) => onUpdate('commissionDate', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.depreciationYears}>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newMold.depreciationYears ?? 0}
+                    onChange={(e) => onUpdate('depreciationYears', Number(e.target.value))}
                     className="detail-input"
                   />
                 </DetailField>
