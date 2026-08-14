@@ -37,7 +37,7 @@ const T = {
     cavities: '腔数',
     oee: 'OEE',
     status: '状态',
-    unitPrice: '单价',
+    unitPrice: '单价(万元)',
     noData: '暂无匹配的模具数据',
     // Status
     active: '在用',
@@ -64,7 +64,7 @@ const T = {
     oeeLowReason: 'OEE低于0.9的原因',
     oeeLowPlaceholder: '请填写OEE低于0.9的原因...',
     quantity: '数量(台)',
-    unitPriceTax: '单价(含税)',
+    unitPriceTax: '单价(万元)',
     totalPrice: '合计金额',
     lossCoeff: '损耗系数',
     modifyReason: '损耗原因',
@@ -145,7 +145,7 @@ const T = {
     cavities: 'Cavities',
     oee: 'OEE',
     status: 'Status',
-    unitPrice: 'Unit Price',
+    unitPrice: 'Unit Price (10k)',
     noData: 'No matching mold data',
     active: 'In Use',
     maintenance: 'Maintenance',
@@ -169,7 +169,7 @@ const T = {
     oeeLowReason: 'Reason for OEE < 0.9',
     oeeLowPlaceholder: 'Please enter the reason for OEE below 0.9...',
     quantity: 'Quantity',
-    unitPriceTax: 'Unit Price (incl. tax)',
+    unitPriceTax: 'Unit Price (10k)',
     totalPrice: 'Total Amount',
     lossCoeff: 'Loss Coeff.',
     modifyReason: 'Reasons for Loss',
@@ -463,7 +463,7 @@ export default function Home() {
       [L === 'zh' ? 'OEE原因' : 'OEE Reason']: m.oeeReason || '',
       [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
       [L === 'zh' ? '数量(台)' : 'Quantity']: m.quantity,
-      [L === 'zh' ? '单价' : 'Unit Price']: m.unitPrice,
+      [L === 'zh' ? '单价(万元)' : 'Unit Price(10k)']: Math.round(m.unitPrice / 100) / 100,
       [L === 'zh' ? '合计金额' : 'Total Amount']: m.totalPrice,
       [L === 'zh' ? '损耗系数' : 'Loss Coeff.']: m.lossCoefficient,
       [L === 'zh' ? '损耗原因' : 'Loss Reason']: m.lossReason || '',
@@ -886,7 +886,12 @@ export default function Home() {
                           'in design': 'pending',
                           '设计中': 'pending',
                         };
-                        const unitPriceStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
+                        // 单价：优先读万元列（新格式），否则读元列（旧格式兼容）
+                        const unitPriceWanStr = String(row['Unit Price(10k)'] ?? row['Unit Price (10k)'] ?? row['单价(万元)'] ?? '').replace(/[¥,]/g, '');
+                        const unitPriceYuanStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
+                        const unitPriceStr = unitPriceWanStr !== ''
+                          ? String(Math.round(Number(unitPriceWanStr) * 10000 * 100) / 100)
+                          : unitPriceYuanStr;
                         return {
                           id: code || `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                           code: String(code),
@@ -1572,7 +1577,7 @@ function MoldRow({
           {mold.cavities}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
-          ¥{mold.unitPrice.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+          ¥{(mold.unitPrice / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
         </td>
         <td className="w-10 px-3 py-3 text-sm">
           {missingFields.length > 0 && (
@@ -1947,8 +1952,9 @@ function MoldRow({
                         <input
                           type="number"
                           step="0.01"
-                          value={mold.unitPrice}
-                          onChange={(e) => onUpdate(mold.id, 'unitPrice', Number(e.target.value))}
+                          key={`unitPrice-${mold.id}-${mold.unitPrice}`}
+                          defaultValue={mold.unitPrice ? Math.round(mold.unitPrice / 100) / 100 : 0}
+                          onBlur={(e) => onUpdate(mold.id, 'unitPrice', Math.round(Number(e.target.value) * 10000 * 100) / 100)}
                           className="detail-input"
                         />
                       </DetailField>
@@ -2517,8 +2523,8 @@ function AddMoldModal({
                     <input
                       type="number"
                       step="0.01"
-                      value={newMold.unitPrice ?? 0}
-                      onChange={(e) => onUpdate('unitPrice', Number(e.target.value))}
+                      defaultValue={(newMold.unitPrice ?? 0) / 10000}
+                      onBlur={(e) => onUpdate('unitPrice', Math.round(Number(e.target.value) * 10000 * 100) / 100)}
                       className="detail-input"
                     />
                   </DetailField>
