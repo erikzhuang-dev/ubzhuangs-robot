@@ -16,7 +16,7 @@ type Lang = 'zh' | 'en';
 const T = {
   zh: {
     title: '模具列表',
-    searchPlaceholder: '搜索模具名称/供应商/编号...',
+    searchPlaceholder: '搜索模具名称/供应商/编号/项目号...',
     allFactories: '全部工厂',
     totalRecords: (n: number) => `共 ${n} 条`,
     exportExcel: '导出Excel',
@@ -125,7 +125,7 @@ const T = {
   },
   en: {
     title: 'Mold List',
-    searchPlaceholder: 'Search name / supplier / code...',
+    searchPlaceholder: 'Search name / supplier / code / project no...',
     allFactories: 'All Factories',
     totalRecords: (n: number) => `${n} records`,
     exportExcel: 'Export Excel',
@@ -374,8 +374,11 @@ export default function Home() {
         const s = searchText.toLowerCase();
         return (
           m.name.toLowerCase().includes(s) ||
+          (m.nameEn || '').toLowerCase().includes(s) ||
           m.supplier.toLowerCase().includes(s) ||
-          m.code.toLowerCase().includes(s)
+          (m.supplierEn || '').toLowerCase().includes(s) ||
+          m.code.toLowerCase().includes(s) ||
+          (m.projectNumber || '').toLowerCase().includes(s)
         );
       }
       return true;
