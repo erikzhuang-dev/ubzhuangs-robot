@@ -652,6 +652,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#dce8d0' }}>
+      {/* Page Header */}
+      <div className="mx-auto max-w-[1400px] px-6 pt-6 pb-4">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#4a7c59' }}>
+          {t.pageTitle}
+        </h1>
+        <p className="mt-1.5 text-sm" style={{ color: '#6b7c6b' }}>
+          {t.pageSubtitle}
+        </p>
+      </div>
+
       {/* Top Navigation Bar */}
       <div className="bg-white border-b" style={{ borderColor: '#e0e8dc', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="mx-auto max-w-[1400px] px-6 flex items-center justify-between h-14">
@@ -761,16 +771,6 @@ export default function Home() {
               </div>
             );
           })}
-        </div>
-
-        {/* Page Title */}
-        <div className="mb-5">
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#4a7c59' }}>
-            {t.pageTitle}
-          </h1>
-          <p className="mt-1.5 text-sm" style={{ color: '#6b7c6b' }}>
-            {t.pageSubtitle}
-          </p>
         </div>
 
         {/* Toolbar */}
