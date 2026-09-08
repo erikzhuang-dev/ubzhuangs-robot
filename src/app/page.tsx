@@ -663,8 +663,8 @@ export default function Home() {
       </div>
 
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b" style={{ borderColor: '#e0e8dc', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-        <div className="mx-auto max-w-[1400px] px-6 flex items-center justify-between h-14">
+      <div className="mx-auto max-w-[1400px] px-6">
+        <div className="flex items-center justify-between h-14 rounded-2xl bg-white px-6" style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}>
           <div className="flex items-center gap-1">
             <button
               className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
