@@ -16,6 +16,8 @@ type Lang = 'zh' | 'en';
 const T = {
   zh: {
     title: '模具列表',
+    pageTitle: '模具管理',
+    pageSubtitle: '模具台账、资产归属、生命周期、状态、维护与工装记录',
     searchPlaceholder: '搜索模具名称/供应商/编号/项目号...',
     allFactories: '全部工厂',
     totalRecords: (n: number) => `共 ${n} 条`,
@@ -125,6 +127,8 @@ const T = {
   },
   en: {
     title: 'Mold List',
+    pageTitle: 'Mold Management',
+    pageSubtitle: 'Mold registry, ownership, lifecycle, condition, maintenance, and tooling records',
     searchPlaceholder: 'Search name / supplier / code / project no...',
     allFactories: 'All Factories',
     totalRecords: (n: number) => `${n} records`,
@@ -757,6 +761,16 @@ export default function Home() {
               </div>
             );
           })}
+        </div>
+
+        {/* Page Title */}
+        <div className="mb-5">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#4a7c59' }}>
+            {t.pageTitle}
+          </h1>
+          <p className="mt-1.5 text-sm" style={{ color: '#6b7c6b' }}>
+            {t.pageSubtitle}
+          </p>
         </div>
 
         {/* Toolbar */}
