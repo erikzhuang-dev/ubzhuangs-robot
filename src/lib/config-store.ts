@@ -43,7 +43,11 @@ const KEYS = {
   locations: 'config_locations',
   suppliers: 'config_suppliers',
   assetOwnerships: 'config_assetOwnerships',
+  monthlyWorkDays: 'config_monthlyWorkDays',
 };
+
+// ── Formula settings defaults ──
+export const DEFAULT_MONTHLY_WORK_DAYS = 25;
 
 // ── Generic helpers ──
 function load<T>(key: string, fallback: T): T {
@@ -97,6 +101,14 @@ export function getAssetOwnerships() {
   return load<{ cn: string; en: string }[]>(KEYS.assetOwnerships, DEFAULT_ASSET_OWNERSHIPS);
 }
 export function setAssetOwnerships(v: { cn: string; en: string }[]) { save(KEYS.assetOwnerships, v); }
+
+// ── Formula settings (monthly capacity parameters) ──
+export function getMonthlyWorkDays(): number {
+  const v = load<number>(KEYS.monthlyWorkDays, DEFAULT_MONTHLY_WORK_DAYS);
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_MONTHLY_WORK_DAYS;
+}
+export function setMonthlyWorkDays(v: number) { save(KEYS.monthlyWorkDays, v); }
 
 // ── Re-export helpers ──
 export { BUS };

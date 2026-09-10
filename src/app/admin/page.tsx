@@ -11,10 +11,11 @@ import {
   getLocations, setLocations,
   getSuppliers, setSuppliers,
   getAssetOwnerships, setAssetOwnerships,
+  getMonthlyWorkDays, setMonthlyWorkDays, DEFAULT_MONTHLY_WORK_DAYS,
 } from '@/lib/config-store';
 import type { Product } from '@/lib/types';
 
-type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships';
+type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships' | 'formula';
 type Lang = 'en' | 'zh';
 
 const translations = {
@@ -52,6 +53,11 @@ const translations = {
     placeholderUser: 'Enter username',
     placeholderPass: 'Enter password',
     timeoutMsg: 'Session expired. Please log in again.',
+    formula: 'Formula',
+    formulaList: 'Calculation Formulas',
+    workDays: 'Working Days per Month',
+    workDaysDesc: 'Parameter used in monthly capacity calculation.',
+    workDaysSaved: 'Saved automatically. Monthly capacity recalculates when you return to the home page.',
   },
   zh: {
     title: '后台管理',
@@ -87,10 +93,15 @@ const translations = {
     placeholderUser: '请输入用户名',
     placeholderPass: '请输入密码',
     timeoutMsg: '登录已超时，请重新登录',
+    formula: '公式',
+    formulaList: '计算公式',
+    workDays: '每月工作天数',
+    workDaysDesc: '月产能计算的参数，返回主页后按新天数重新计算',
+    workDaysSaved: '已自动保存，返回主页后按新天数重算月产能',
   },
 };
 
-const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships'];
+const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships', 'formula'];
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('factories');
@@ -103,6 +114,7 @@ export default function AdminPage() {
   const [suppliers, setSuppliersState] = useState<{ cn: string; en: string }[]>([]);
   const [assetOwnerships, setAssetOwnershipsState] = useState<{ cn: string; en: string }[]>([]);
   const [saved, setSaved] = useState(true);
+  const [workDays, setWorkDaysState] = useState<number>(DEFAULT_MONTHLY_WORK_DAYS);
 
   // Login state
   const [loggedIn, setLoggedIn] = useState(false);
@@ -165,6 +177,7 @@ export default function AdminPage() {
       setLocationsState(getLocations());
       setSuppliersState(getSuppliers());
       setAssetOwnershipsState(getAssetOwnerships());
+      setWorkDaysState(getMonthlyWorkDays());
     }
   }, [loggedIn]);
 
@@ -436,7 +449,97 @@ export default function AdminPage() {
               onChange={(v) => { setAssetOwnershipsState(v); markDirty(); }}
             />
           )}
+          {tab === 'formula' && <FormulaPanel lang={lang} />}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Formula panel ──
+function FormulaPanel({ lang }: { lang: Lang }) {
+  const t = translations[lang];
+  const [workDays, setWorkDays] = useState<number>(DEFAULT_MONTHLY_WORK_DAYS);
+
+  useEffect(() => {
+    setWorkDays(getMonthlyWorkDays());
+  }, []);
+
+  const handleWorkDaysChange = (raw: string) => {
+    const n = Math.floor(Number(raw));
+    if (!Number.isFinite(n) || n < 1) return;
+    const clamped = Math.min(n, 31);
+    setWorkDays(clamped);
+    setMonthlyWorkDays(clamped);
+  };
+
+  const formulas = [
+    {
+      name: lang === 'zh' ? '理论每小时产能' : 'Theoretical Hourly Output',
+      expr: lang === 'zh' ? '= 腔数 × 3600 ÷ 周期(秒)' : '= Cavities × 3600 ÷ Cycle Time (s)',
+      desc: lang === 'zh' ? '由模具腔数与注塑周期决定' : 'Determined by cavity count and cycle time',
+    },
+    {
+      name: lang === 'zh' ? '实际每小时产能' : 'Actual Hourly Output',
+      expr: lang === 'zh' ? '= 理论每小时产能 × OEE' : '= Theoretical Hourly Output × OEE',
+      desc: lang === 'zh' ? 'OEE 为设备综合稼动效率' : 'OEE reflects overall equipment effectiveness',
+    },
+    {
+      name: lang === 'zh' ? '实际24H产能' : 'Actual 24H Output',
+      expr: lang === 'zh' ? '= 实际每小时产能 × 24' : '= Actual Hourly Output × 24',
+      desc: lang === 'zh' ? '按24小时连续生产估算的日产能' : 'Daily output assuming 24-hour continuous production',
+    },
+    {
+      name: lang === 'zh' ? '理论月产能(万)' : 'Theoretical Monthly Capacity (10k)',
+      expr: lang === 'zh' ? `= 理论每小时产能 × 24 × ${workDays} ÷ 10000` : `= Theoretical Hourly Output × 24 × ${workDays} ÷ 10000`,
+      desc: lang === 'zh' ? `${workDays} 为每月工作天数，可在上方修改` : `${workDays} working days per month, editable above`,
+    },
+    {
+      name: lang === 'zh' ? '实际月产能(万)' : 'Actual Monthly Capacity (10k)',
+      expr: lang === 'zh' ? `= 实际每小时产能 × 24 × ${workDays} ÷ 10000` : `= Actual Hourly Output × 24 × ${workDays} ÷ 10000`,
+      desc: lang === 'zh' ? `${workDays} 为每月工作天数，可在上方修改` : `${workDays} working days per month, editable above`,
+    },
+    {
+      name: lang === 'zh' ? '合计金额(元)' : 'Total Amount (¥)',
+      expr: lang === 'zh' ? '= 数量 × 单价' : '= Quantity × Unit Price',
+      desc: lang === 'zh' ? '模具投资合计金额' : 'Total mold investment amount',
+    },
+  ];
+
+  return (
+    <div>
+      {/* Monthly work days parameter */}
+      <div className="mb-4 rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.workDays}</h4>
+            <p className="mt-0.5 text-xs" style={{ color: '#6b7c6b' }}>{t.workDaysDesc}</p>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={31}
+            value={workDays}
+            onChange={(e) => handleWorkDaysChange(e.target.value)}
+            className="h-9 w-24 shrink-0 rounded-lg border px-3 text-center text-sm outline-none transition-colors focus:border-[#4a7c59]"
+            style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+          />
+        </div>
+        <p className="mt-2 text-xs font-medium" style={{ color: '#4a7c59' }}>{t.workDaysSaved}</p>
+      </div>
+
+      {/* Formula cards */}
+      <h3 className="mb-3 text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.formulaList}</h3>
+      <div className="space-y-2">
+        {formulas.map((f) => (
+          <div key={f.name} className="rounded-xl border px-4 py-3" style={{ borderColor: '#e0e8dc' }}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <span className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{f.name}</span>
+              <span className="font-mono text-xs font-medium" style={{ color: '#4a7c59' }}>{f.expr}</span>
+            </div>
+            <p className="mt-1 text-xs" style={{ color: '#6b7c6b' }}>{f.desc}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

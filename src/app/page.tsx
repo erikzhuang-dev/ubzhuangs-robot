@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BUS, INITIAL_MOLDS } from '@/lib/mock-data';
 import {
-  getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers, getAssetOwnerships,
+  getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers, getAssetOwnerships, getMonthlyWorkDays,
 } from '@/lib/config-store';
 import type { Mold, Product } from '@/lib/types';
 import { translateMoldName } from '@/lib/translator';
@@ -120,8 +120,8 @@ const T = {
     hourlyOutputTheoryHint: '计算公式：腔数 × 3600 ÷ 周期(秒)',
     hourlyOutputActualHint: '计算公式：理论每小时产能 × OEE',
     dailyOutputActualHint: '计算公式：实际每小时产能 × 24',
-    monthlyCapacityTheoryHint: '计算公式：理论每小时产能 × 24 × 25 ÷ 10000（25为每月工作天数）',
-    monthlyCapacityActualHint: '计算公式：实际每小时产能 × 24 × 25 ÷ 10000（25为每月工作天数）',
+    monthlyCapacityTheoryHint: '计算公式：理论每小时产能 × 24 × {days} ÷ 10000（{days}为每月工作天数）',
+    monthlyCapacityActualHint: '计算公式：实际每小时产能 × 24 × {days} ÷ 10000（{days}为每月工作天数）',
     capacityUnitDay: '件/天',
     monthlyCapacityTheory: '理论月产能(万)',
     monthlyCapacityActual: '实际月产能(万)',
@@ -229,8 +229,8 @@ const T = {
     hourlyOutputTheoryHint: 'Formula: Cavities × 3600 ÷ Cycle Time (s)',
     hourlyOutputActualHint: 'Formula: Theoretical Hourly Output × OEE',
     dailyOutputActualHint: 'Formula: Actual Hourly Output × 24',
-    monthlyCapacityTheoryHint: 'Formula: Theoretical Hourly Output × 24 × 25 ÷ 10000 (25 working days/month)',
-    monthlyCapacityActualHint: 'Formula: Actual Hourly Output × 24 × 25 ÷ 10000 (25 working days/month)',
+    monthlyCapacityTheoryHint: 'Formula: Theoretical Hourly Output × 24 × {days} ÷ 10000 ({days} working days/month)',
+    monthlyCapacityActualHint: 'Formula: Actual Hourly Output × 24 × {days} ÷ 10000 ({days} working days/month)',
     capacityUnitDay: 'pcs/day',
     monthlyCapacityTheory: 'Theoretical Monthly Capacity(10k)',
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
@@ -352,11 +352,11 @@ export default function Home() {
           moldWeight: m.moldWeight ?? 0,
           drawingNumber: m.drawingNumber ?? '',
           hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
-          monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
+          monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * getMonthlyWorkDays() / 10000 * 100) / 100,
           theoreticalHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60),
           actualHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
-          theoreticalMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60) * 24 * 25 / 10000 * 100) / 100,
-          actualMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
+          theoreticalMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60) * 24 * getMonthlyWorkDays() / 10000 * 100) / 100,
+          actualMonthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * getMonthlyWorkDays() / 10000 * 100) / 100,
         }));
         setMolds(recalculated);
       } catch {
@@ -436,14 +436,14 @@ export default function Home() {
             updated.theoreticalHourlyCapacity = theoretical;
             updated.actualHourlyCapacity = Math.round(theoretical * updated.oee);
             updated.hourlyCapacity = updated.actualHourlyCapacity;
-            updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
-            updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+            updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
+            updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
             updated.monthlyCapacity = updated.actualMonthlyCapacity;
           }
         }
         if (field === 'hourlyCapacity') {
           const hc = Number(value);
-          updated.monthlyCapacity = Math.round(hc * 24 * 25 / 10000 * 100) / 100;
+          updated.monthlyCapacity = Math.round(hc * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
         }
         if (field === 'oee') {
           const oee = Number(value);
@@ -451,8 +451,8 @@ export default function Home() {
           updated.theoreticalHourlyCapacity = theoretical;
           updated.actualHourlyCapacity = Math.round(theoretical * oee);
           updated.hourlyCapacity = updated.actualHourlyCapacity;
-          updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
-          updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+          updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
+          updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
           updated.monthlyCapacity = updated.actualMonthlyCapacity;
         }
         if (field === 'quantity' || field === 'unitPrice') {
@@ -635,14 +635,14 @@ export default function Home() {
           updated.theoreticalHourlyCapacity = theoretical;
           updated.actualHourlyCapacity = Math.round(theoretical * (updated.oee || 0.9));
           updated.hourlyCapacity = updated.actualHourlyCapacity;
-          updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
-          updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+          updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
+          updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
           updated.monthlyCapacity = updated.actualMonthlyCapacity;
         }
       }
       if (field === 'hourlyCapacity') {
         const hc = Number(value);
-        updated.monthlyCapacity = Math.round(hc * 24 * 25 / 10000 * 100) / 100;
+        updated.monthlyCapacity = Math.round(hc * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
       }
       if (field === 'oee') {
         const oee = Number(value);
@@ -650,8 +650,8 @@ export default function Home() {
         updated.theoreticalHourlyCapacity = theoretical;
         updated.actualHourlyCapacity = Math.round(theoretical * oee);
         updated.hourlyCapacity = updated.actualHourlyCapacity;
-        updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * 25 / 10000 * 100) / 100;
-        updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * 25 / 10000 * 100) / 100;
+        updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
+        updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * getMonthlyWorkDays() / 10000 * 100) / 100;
         updated.monthlyCapacity = updated.actualMonthlyCapacity;
       }
       if (field === 'quantity' || field === 'unitPrice') {
@@ -2116,7 +2116,7 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label={t.monthlyCapacityTheory} hint={t.monthlyCapacityTheoryHint}>
+                      <DetailField label={t.monthlyCapacityTheory} hint={t.monthlyCapacityTheoryHint.replace('{days}', String(getMonthlyWorkDays()))}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
@@ -2124,7 +2124,7 @@ function MoldRow({
                           {(mold.theoreticalMonthlyCapacity ?? 0).toFixed(2)} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
                         </div>
                       </DetailField>
-                      <DetailField label={t.monthlyCapacityActual} hint={t.monthlyCapacityActualHint}>
+                      <DetailField label={t.monthlyCapacityActual} hint={t.monthlyCapacityActualHint.replace('{days}', String(getMonthlyWorkDays()))}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
