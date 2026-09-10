@@ -82,6 +82,8 @@ const T = {
     moldWidth: '宽',
     moldThickness: '厚',
     location: '所在地',
+    moldWeight: '模具重量(kg)',
+    drawingNumber: '图纸编号',
     // Runner types
     hotRunner: '热流道',
     coldRunner: '冷流道',
@@ -189,6 +191,8 @@ const T = {
     moldWidth: 'Width',
     moldThickness: 'Thickness',
     location: 'Location',
+    moldWeight: 'Mold Weight (kg)',
+    drawingNumber: 'Drawing Number',
     hotRunner: 'Hot Runner',
     coldRunner: 'Cold Runner',
     semiHotRunner: 'Semi-Hot Runner',
@@ -304,6 +308,8 @@ export default function Home() {
     moldWidth: 0,
     moldThickness: 0,
     location: '',
+    moldWeight: 0,
+    drawingNumber: '',
     status: 'pending',
     projectNumber: '',
   });
@@ -332,6 +338,8 @@ export default function Home() {
           moldWidth: m.moldWidth ?? 0,
           moldThickness: m.moldThickness ?? 0,
           location: m.location ?? '',
+          moldWeight: m.moldWeight ?? 0,
+          drawingNumber: m.drawingNumber ?? '',
           hourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee),
           monthlyCapacity: Math.round(Math.round(m.cavities * (60 / m.cycleTime) * 60 * m.oee) * 24 * 25 / 10000 * 100) / 100,
           theoreticalHourlyCapacity: Math.round(m.cavities * (60 / m.cycleTime) * 60),
@@ -490,6 +498,8 @@ export default function Home() {
       [L === 'zh' ? '资产归属' : 'Asset Ownership']: L === 'zh' ? (m.assetOwnership || '') : (m.assetOwnershipEn || m.assetOwnership || ''),
       [L === 'zh' ? '启用时间' : 'Activation Date']: m.commissionDate || '',
       [L === 'zh' ? '寿命' : 'Lifetime']: m.depreciationYears ?? 0,
+      [L === 'zh' ? '图纸编号' : 'Drawing Number']: m.drawingNumber || '',
+      [L === 'zh' ? '模具重量(kg)' : 'Mold Weight(kg)']: m.moldWeight ?? 0,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -587,6 +597,8 @@ export default function Home() {
       moldWidth: 0,
       moldThickness: 0,
       location: '',
+      moldWeight: 0,
+      drawingNumber: '',
       moldType: 'mass',
       assetOwnership: '',
       assetOwnershipEn: '',
@@ -968,6 +980,8 @@ export default function Home() {
                           depreciationYears: Number(row['Lifetime'] || row['寿命'] || row['Depreciation Years'] || row['折旧年数'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
+                          drawingNumber: String(row['Drawing Number'] || row['图纸编号'] || ''),
+                          moldWeight: Number(row['Mold Weight(kg)'] || row['模具重量(kg)'] || row['模具重量'] || 0),
                         };
                       });
 
@@ -1651,6 +1665,14 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
+                    <DetailField label={t.drawingNumber}>
+                      <input
+                        type="text"
+                        value={mold.drawingNumber || ''}
+                        onChange={(e) => onUpdate(mold.id, 'drawingNumber', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
                     <DetailField label={t.belongProduct}>
                       <select
                         value={mold.productId}
@@ -1806,6 +1828,15 @@ function MoldRow({
                           />
                         </div>
                       </div>
+                    </DetailField>
+                    <DetailField label={t.moldWeight}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={mold.moldWeight ?? 0}
+                        onChange={(e) => onUpdate(mold.id, 'moldWeight', Number(e.target.value))}
+                        className="detail-input"
+                      />
                     </DetailField>
                     <DetailField label={t.moldType}>
                       <select
@@ -2267,6 +2298,14 @@ function AddMoldModal({
                     className="detail-input"
                   />
                 </DetailField>
+                <DetailField label={t.drawingNumber}>
+                  <input
+                    type="text"
+                    value={newMold.drawingNumber || ''}
+                    onChange={(e) => onUpdate('drawingNumber', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
                 <DetailField label={t.moldCode}>
                   <input
                     type="text"
@@ -2404,6 +2443,15 @@ function AddMoldModal({
                       />
                     </div>
                   </div>
+                </DetailField>
+                <DetailField label={t.moldWeight}>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newMold.moldWeight ?? 0}
+                    onChange={(e) => onUpdate('moldWeight', Number(e.target.value))}
+                    className="detail-input"
+                  />
                 </DetailField>
                 <DetailField label={t.moldType}>
                   <select

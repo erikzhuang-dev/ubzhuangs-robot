@@ -35,6 +35,8 @@ export interface Mold {
   moldLength: number; // 模具尺寸-长(mm)
   moldWidth: number; // 模具尺寸-宽(mm)
   moldThickness: number; // 模具尺寸-厚(mm)
+  moldWeight?: number; // 模具重量(kg)
+  drawingNumber?: string; // 图纸编号
   location: string; // 所在地
   moldType?: string; // 模具类型：mass(量产模) / trial(试验模)
   theoreticalHourlyCapacity?: number; // 理论每小时产能
