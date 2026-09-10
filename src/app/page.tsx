@@ -9,6 +9,7 @@ import type { Mold, Product } from '@/lib/types';
 import { translateMoldName } from '@/lib/translator';
 import * as XLSX from 'xlsx';
 import Analysis from '@/components/Analysis';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Lang = 'zh' | 'en';
 
@@ -116,6 +117,9 @@ const T = {
     hourlyOutputTheory: '理论每小时产能',
     hourlyOutputActual: '实际每小时产能',
     dailyOutputActual: '实际24H产能',
+    hourlyOutputTheoryHint: '计算公式：腔数 × 3600 ÷ 周期(秒)',
+    hourlyOutputActualHint: '计算公式：理论每小时产能 × OEE',
+    dailyOutputActualHint: '计算公式：实际每小时产能 × 24',
     capacityUnitDay: '件/天',
     monthlyCapacityTheory: '理论月产能(万)',
     monthlyCapacityActual: '实际月产能(万)',
@@ -220,6 +224,9 @@ const T = {
     hourlyOutputTheory: 'Theoretical Hourly Output',
     hourlyOutputActual: 'Actual Hourly Output',
     dailyOutputActual: 'Actual 24H Output',
+    hourlyOutputTheoryHint: 'Formula: Cavities × 3600 ÷ Cycle Time (s)',
+    hourlyOutputActualHint: 'Formula: Theoretical Hourly Output × OEE',
+    dailyOutputActualHint: 'Formula: Actual Hourly Output × 24',
     capacityUnitDay: 'pcs/day',
     monthlyCapacityTheory: 'Theoretical Monthly Capacity(10k)',
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
@@ -1931,7 +1938,7 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                      <DetailField label={t.hourlyOutputTheory}>
+                      <DetailField label={t.hourlyOutputTheory} hint={t.hourlyOutputTheoryHint}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
@@ -1939,7 +1946,7 @@ function MoldRow({
                           {mold.theoreticalHourlyCapacity ?? 0} <span className="ml-1 text-xs">{t.capacityUnit}</span>
                         </div>
                       </DetailField>
-                      <DetailField label={t.hourlyOutputActual}>
+                      <DetailField label={t.hourlyOutputActual} hint={t.hourlyOutputActualHint}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
@@ -1947,7 +1954,7 @@ function MoldRow({
                           {mold.actualHourlyCapacity ?? 0} <span className="ml-1 text-xs">{t.capacityUnit}</span>
                         </div>
                       </DetailField>
-                      <DetailField label={t.dailyOutputActual}>
+                      <DetailField label={t.dailyOutputActual} hint={t.dailyOutputActualHint}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
@@ -2143,11 +2150,24 @@ function MoldRow({
 }
 
 // Detail Field wrapper
-function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
+function DetailField({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div>
       <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
-        {label}
+        {hint ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-help border-b border-dotted" style={{ borderColor: '#a8c5a0' }}>
+                {label}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4} className="rounded-lg bg-[#2d3b2d] px-3 py-1.5 text-xs text-white shadow-md">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          label
+        )}
       </label>
       {children}
     </div>
