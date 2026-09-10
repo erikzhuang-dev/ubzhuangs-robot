@@ -120,6 +120,8 @@ const T = {
     hourlyOutputTheoryHint: '计算公式：腔数 × 3600 ÷ 周期(秒)',
     hourlyOutputActualHint: '计算公式：理论每小时产能 × OEE',
     dailyOutputActualHint: '计算公式：实际每小时产能 × 24',
+    monthlyCapacityTheoryHint: '计算公式：理论每小时产能 × 24 × 25 ÷ 10000（25为每月工作天数）',
+    monthlyCapacityActualHint: '计算公式：实际每小时产能 × 24 × 25 ÷ 10000（25为每月工作天数）',
     capacityUnitDay: '件/天',
     monthlyCapacityTheory: '理论月产能(万)',
     monthlyCapacityActual: '实际月产能(万)',
@@ -227,6 +229,8 @@ const T = {
     hourlyOutputTheoryHint: 'Formula: Cavities × 3600 ÷ Cycle Time (s)',
     hourlyOutputActualHint: 'Formula: Theoretical Hourly Output × OEE',
     dailyOutputActualHint: 'Formula: Actual Hourly Output × 24',
+    monthlyCapacityTheoryHint: 'Formula: Theoretical Hourly Output × 24 × 25 ÷ 10000 (25 working days/month)',
+    monthlyCapacityActualHint: 'Formula: Actual Hourly Output × 24 × 25 ÷ 10000 (25 working days/month)',
     capacityUnitDay: 'pcs/day',
     monthlyCapacityTheory: 'Theoretical Monthly Capacity(10k)',
     monthlyCapacityActual: 'Actual Monthly Capacity(10k)',
@@ -2112,7 +2116,7 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label={t.monthlyCapacityTheory}>
+                      <DetailField label={t.monthlyCapacityTheory} hint={t.monthlyCapacityTheoryHint}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
@@ -2120,7 +2124,7 @@ function MoldRow({
                           {(mold.theoreticalMonthlyCapacity ?? 0).toFixed(2)} <span className="ml-1 text-xs">{lang === 'zh' ? '万/月' : '10k/mo'}</span>
                         </div>
                       </DetailField>
-                      <DetailField label={t.monthlyCapacityActual}>
+                      <DetailField label={t.monthlyCapacityActual} hint={t.monthlyCapacityActualHint}>
                         <div
                           className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
                           style={{ backgroundColor: '#f0f7ec', color: '#6b7c6b', border: '1px solid #e0e8dc' }}
