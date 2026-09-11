@@ -2097,15 +2097,6 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label={t.sprueWeight}>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={mold.sprueWeight ?? 0}
-                          onChange={(e) => onUpdate(mold.id, 'sprueWeight', Number(e.target.value))}
-                          className="detail-input"
-                        />
-                      </DetailField>
                       <DetailField label={t.activationDate}>
                         <input
                           type="date"
@@ -2694,15 +2685,6 @@ function AddMoldModal({
                   </DetailField>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <DetailField label={t.sprueWeight}>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newMold.sprueWeight ?? 0}
-                      onChange={(e) => onUpdate('sprueWeight', Number(e.target.value))}
-                      className="detail-input"
-                    />
-                  </DetailField>
                   <DetailField label={t.monthlyCapacity}>
                     <div
                       className="flex h-9 items-center rounded-lg px-3 text-sm font-medium"
