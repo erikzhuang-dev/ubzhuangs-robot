@@ -23,6 +23,7 @@ const FIELD_LABELS: Record<string, { zh: string; en: string }> = {
   name: { zh: '模具名称', en: 'Mold Name' },
   nameEn: { zh: '英文名称', en: 'Name (EN)' },
   projectNumber: { zh: '项目编号', en: 'Project Number' },
+  internalNumber: { zh: '内部编号', en: 'Internal Number' },
   drawingNumber: { zh: '图纸编号', en: 'Drawing Number' },
   supplier: { zh: '供应商', en: 'Supplier' },
   supplierEn: { zh: '供应商(EN)', en: 'Supplier (EN)' },
@@ -97,6 +98,7 @@ const T = {
     basicInfo: '基本信息',
     moldCode: '模具编号',
     projectNumber: '项目编号',
+    internalNumber: '内部编号',
     detailName: '名称',
     moldNameZh: '模具中文名',
     moldNameEnLabel: '模具英文名',
@@ -246,6 +248,7 @@ const T = {
     basicInfo: 'Basic Info',
     moldCode: 'Mold Code',
     projectNumber: 'Project Number',
+    internalNumber: 'Internal Number',
     detailName: 'Name',
     moldNameZh: 'Mold Name (CN)',
     moldNameEnLabel: 'Mold Name (EN)',
@@ -405,6 +408,7 @@ const EMPTY_MOLD_DRAFT: Partial<Mold> = {
   depreciationYears: 0,
   status: 'pending',
   projectNumber: '',
+  internalNumber: '',
 };
 
 const STATUS_COLOR: Record<Mold['status'], string> = {
@@ -939,6 +943,7 @@ export default function Home() {
     const exportData = filteredMolds.map((m) => ({
       [L === 'zh' ? '模具编号' : 'Mold Code']: m.code,
       [L === 'zh' ? '项目编号' : 'Project Number']: m.projectNumber || '',
+      [L === 'zh' ? '内部编号' : 'Internal Number']: m.internalNumber || '',
       [L === 'zh' ? '模具名称' : 'Mold Name']: m.name,
       [L === 'zh' ? '模具英文名' : 'Mold Name EN']: m.nameEn || '',
       [L === 'zh' ? '供应商' : 'Supplier']: L === 'zh' ? m.supplier : (m.supplierEn || m.supplier),
@@ -1026,6 +1031,7 @@ export default function Home() {
       id: `mold-${Date.now()}`,
       code: newMold.code || autoCode,
       projectNumber: newMold.projectNumber || '',
+      internalNumber: newMold.internalNumber || '',
       name: newMold.name || '',
       nameEn: newMold.nameEn || translateMoldName(newMold.name || ''),
       supplier: newMold.supplier || '',
@@ -1692,6 +1698,7 @@ export default function Home() {
                           depreciationYears: Number(row['Lifetime'] || row['寿命'] || row['Depreciation Years'] || row['折旧年数'] || 0),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
+                          internalNumber: String(row['Internal Number'] || row['内部编号'] || ''),
                           drawingNumber: String(row['Drawing Number'] || row['图纸编号'] || ''),
                           moldWeight: Number(row['Mold Weight(kg)'] || row['模具重量(kg)'] || row['模具重量'] || 0),
                         };
@@ -2645,6 +2652,14 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
+                    <DetailField label={t.internalNumber}>
+                      <input
+                        type="text"
+                        value={mold.internalNumber || ''}
+                        onChange={(e) => onUpdate(mold.id, 'internalNumber', e.target.value)}
+                        className="detail-input"
+                      />
+                    </DetailField>
                     <DetailField label={t.drawingNumber}>
                       <input
                         type="text"
@@ -3283,6 +3298,14 @@ function AddMoldModal({
                     type="text"
                     value={newMold.projectNumber || ''}
                     onChange={(e) => onUpdate('projectNumber', e.target.value)}
+                    className="detail-input"
+                  />
+                </DetailField>
+                <DetailField label={t.internalNumber}>
+                  <input
+                    type="text"
+                    value={newMold.internalNumber || ''}
+                    onChange={(e) => onUpdate('internalNumber', e.target.value)}
                     className="detail-input"
                   />
                 </DetailField>

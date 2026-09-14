@@ -4,6 +4,7 @@ export interface Mold {
   id: string;
   code: string;
   projectNumber?: string;
+  internalNumber?: string;
   name: string;
   nameEn?: string;
   supplier: string;
