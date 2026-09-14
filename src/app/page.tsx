@@ -1371,7 +1371,8 @@ export default function Home() {
             </h2>
             {/* Search */}
             <input
-              type="text"
+              type="search"
+              autoComplete="off"
               placeholder={t.searchPlaceholder}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -1809,6 +1810,8 @@ export default function Home() {
               </p>
               <input
                 type="password"
+                name="admin-pin"
+                autoComplete="new-password"
                 value={pinInput}
                 autoFocus
                 onChange={(e) => {

@@ -276,6 +276,7 @@ export default function AdminPage() {
               <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>{t.username}</label>
               <input
                 type="text"
+                autoComplete="username"
                 value={loginUser}
                 onChange={(e) => { setLoginUser(e.target.value); setLoginError(''); setTimeoutMsg(''); }}
                 onKeyDown={handleLoginKeyDown}
@@ -288,6 +289,7 @@ export default function AdminPage() {
               <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>{t.password}</label>
               <input
                 type="password"
+                autoComplete="current-password"
                 value={loginPass}
                 onChange={(e) => { setLoginPass(e.target.value); setLoginError(''); setTimeoutMsg(''); }}
                 onKeyDown={handleLoginKeyDown}
@@ -671,6 +673,7 @@ function ApprovalPanel({ lang }: { lang: Lang }) {
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             type="password"
+            autoComplete="new-password"
             placeholder={t.newPin}
             value={pin}
             onChange={(e) => { setPin(e.target.value); setPinMsg(null); }}
@@ -679,6 +682,7 @@ function ApprovalPanel({ lang }: { lang: Lang }) {
           />
           <input
             type="password"
+            autoComplete="new-password"
             placeholder={t.confirmPin}
             value={pinConfirm}
             onChange={(e) => { setPinConfirm(e.target.value); setPinMsg(null); }}
