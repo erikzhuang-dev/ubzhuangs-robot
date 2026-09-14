@@ -44,6 +44,11 @@ const KEYS = {
   suppliers: 'config_suppliers',
   assetOwnerships: 'config_assetOwnerships',
   monthlyWorkDays: 'config_monthlyWorkDays',
+  adminPin: 'config_admin',
+  adminSession: 'config_admin_session',
+  lastApplicant: 'config_last_applicant',
+  pendingNotify: 'config_pending_notify',
+  requestRetentionDays: 'config_request_retention',
 };
 
 // ── Formula settings defaults ──
@@ -109,6 +114,40 @@ export function getMonthlyWorkDays(): number {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_MONTHLY_WORK_DAYS;
 }
 export function setMonthlyWorkDays(v: number) { save(KEYS.monthlyWorkDays, v); }
+
+// ── Approval / admin mode settings ──
+export const DEFAULT_ADMIN_PIN = 'admin123';
+
+export function getAdminPin(): string {
+  const v = load<string>(KEYS.adminPin, DEFAULT_ADMIN_PIN);
+  return typeof v === 'string' && v.length > 0 ? v : DEFAULT_ADMIN_PIN;
+}
+export function setAdminPin(pin: string) { save(KEYS.adminPin, pin); }
+
+export function isAdminMode(): boolean {
+  const v = load<{ active?: boolean }>(KEYS.adminSession, { active: false });
+  return v.active === true;
+}
+export function setAdminMode(active: boolean) { save(KEYS.adminSession, { active }); }
+
+export function getLastApplicant(): string {
+  const v = load<{ name?: string }>(KEYS.lastApplicant, {});
+  return typeof v.name === 'string' ? v.name : '';
+}
+export function setLastApplicant(name: string) { save(KEYS.lastApplicant, { name }); }
+
+/** 待审批提醒开关（普通模式下顶部也显示角标） */
+export function getPendingNotify(): boolean {
+  return load<boolean>(KEYS.pendingNotify, true);
+}
+export function setPendingNotify(v: boolean) { save(KEYS.pendingNotify, v); }
+
+/** 申请单保留策略：0 = 全部保留；>0 = 终态单仅保留最近 N 天 */
+export function getRequestRetentionDays(): number {
+  const n = Number(load<number>(KEYS.requestRetentionDays, 0));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+export function setRequestRetentionDays(days: number) { save(KEYS.requestRetentionDays, days); }
 
 // ── Re-export helpers ──
 export { BUS };

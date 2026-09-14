@@ -4,14 +4,60 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BUS, INITIAL_MOLDS } from '@/lib/mock-data';
 import {
   getFactories, getProducts, getRunnerTypes, getMaterials, getLocations, getSuppliers, getAssetOwnerships, getMonthlyWorkDays,
+  isAdminMode, setAdminMode, getLastApplicant, setLastApplicant, getAdminPin, getPendingNotify, setPendingNotify,
+  getRequestRetentionDays,
 } from '@/lib/config-store';
-import type { Mold, Product } from '@/lib/types';
+import {
+  getRequests, addRequest, updateRequest, nextRequestNo, purgeRequestsByRetention,
+} from '@/lib/request-store';
+import type { Mold, Product, MoldRequest, FieldChange } from '@/lib/types';
 import { translateMoldName } from '@/lib/translator';
 import * as XLSX from 'xlsx';
 import Analysis from '@/components/Analysis';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Lang = 'zh' | 'en';
+
+/** Field label mapping for request diff display (zh/en) */
+const FIELD_LABELS: Record<string, { zh: string; en: string }> = {
+  name: { zh: '模具名称', en: 'Mold Name' },
+  nameEn: { zh: '英文名称', en: 'Name (EN)' },
+  projectNumber: { zh: '项目编号', en: 'Project Number' },
+  drawingNumber: { zh: '图纸编号', en: 'Drawing Number' },
+  supplier: { zh: '供应商', en: 'Supplier' },
+  supplierEn: { zh: '供应商(EN)', en: 'Supplier (EN)' },
+  factory: { zh: '工厂', en: 'Factory' },
+  buId: { zh: 'BU', en: 'BU' },
+  productId: { zh: '产品', en: 'Product' },
+  location: { zh: '所在地', en: 'Location' },
+  status: { zh: '状态', en: 'Status' },
+  material: { zh: '关联材料', en: 'Linked Material' },
+  assetOwnership: { zh: '资产归属', en: 'Asset Ownership' },
+  assetOwnershipEn: { zh: '资产归属(EN)', en: 'Asset Ownership (EN)' },
+  runnerType: { zh: '流道类型', en: 'Runner Type' },
+  moldType: { zh: '模具类型', en: 'Mold Type' },
+  cavities: { zh: '腔数', en: 'Cavities' },
+  cycleTime: { zh: '注塑周期(秒)', en: 'Cycle Time (s)' },
+  oee: { zh: 'OEE', en: 'OEE' },
+  oeeReason: { zh: 'OEE偏低原因', en: 'Reason for Low OEE' },
+  oeeReasonEn: { zh: 'OEE偏低原因(EN)', en: 'Reason for Low OEE (EN)' },
+  quantity: { zh: '数量', en: 'Quantity' },
+  unitPrice: { zh: '单价(元)', en: 'Unit Price' },
+  moldLength: { zh: '长(mm)', en: 'Length (mm)' },
+  moldWidth: { zh: '宽(mm)', en: 'Width (mm)' },
+  moldThickness: { zh: '厚(mm)', en: 'Thickness (mm)' },
+  moldWeight: { zh: '模具重量(kg)', en: 'Mold Weight (kg)' },
+  depreciationYears: { zh: '寿命(年)', en: 'Lifetime (year)' },
+  sprueWeight: { zh: '水口料重量(g)', en: 'Sprue Weight (g)' },
+  lossCoefficient: { zh: '损耗系数', en: 'Loss Factor' },
+  lossReason: { zh: '损耗原因', en: 'Loss Reason' },
+  lossReasonEn: { zh: '损耗原因(EN)', en: 'Loss Reason (EN)' },
+  enabledDate: { zh: '启用日期', en: 'Enabled Date' },
+  commissionDate: { zh: '启用日期', en: 'Enabled Date' },
+  hourlyCapacity: { zh: '实际每小时产能', en: 'Actual Hourly Output' },
+  productName: { zh: '产品名称', en: 'Product Name' },
+  productNameEn: { zh: '产品名称(EN)', en: 'Product Name (EN)' },
+};
 
 // Translation dictionaries
 const T = {
@@ -132,6 +178,25 @@ const T = {
     confirmDeleteTitle: '确认删除',
     confirmDeleteMsg: '确认要删除此模具吗？',
     confirmDelete: '删除',
+    // ── Approval workflow ──
+    adminPinError: '管理员口令错误',
+    noChange: '没有检测到修改内容',
+    draftBarTitle: (n: number) => `已暂存 ${n} 项修改（提交申请后生效）`,
+    draftDiscard: '放弃修改',
+    reqReasonLabel: '修改原因',
+    reqReasonPlaceholder: '请填写修改原因（必填）',
+    reqReasonRequired: '请填写修改原因',
+    reqApplicantLabel: '申请人',
+    reqApplicantPlaceholder: '请填写申请人（必填）',
+    reqApplicantRequired: '请填写申请人',
+    reqSubmitModify: '提交修改申请',
+    reqSubmitPurchase: '提交购买申请',
+    purchaseBtn: '购买申请',
+    purchaseFormTitle: '模具购买申请',
+    requestInfoTitle: '购买申请信息（提交后进入审批流程）',
+    pendingBanner: (no: string) => `该模具存在待审批的修改申请（${no}），台账数据未变更`,
+    lastRequestLabel: '最近申请单',
+    reqSubmitted: '申请已提交，等待管理员审批',
   },
   en: {
     title: 'Mold List',
@@ -241,8 +306,67 @@ const T = {
     confirmDeleteTitle: 'Confirm Delete',
     confirmDeleteMsg: 'Are you sure you want to delete this mold?',
     confirmDelete: 'Delete',
+    // ── Approval workflow ──
+    adminPinError: 'Incorrect admin PIN',
+    noChange: 'No modifications detected',
+    draftBarTitle: (n: number) => `${n} change(s) staged (takes effect after request approval)`,
+    draftDiscard: 'Discard',
+    reqReasonLabel: 'Reason',
+    reqReasonPlaceholder: 'Reason for change (required)',
+    reqReasonRequired: 'Reason for change is required',
+    reqApplicantLabel: 'Applicant',
+    reqApplicantPlaceholder: 'Your name (required)',
+    reqApplicantRequired: 'Applicant name is required',
+    reqSubmitModify: 'Submit Modify Request',
+    reqSubmitPurchase: 'Submit Purchase Request',
+    purchaseBtn: 'Purchase Request',
+    purchaseFormTitle: 'Mold Purchase Request',
+    requestInfoTitle: 'Purchase request info (enters approval flow after submit)',
+    pendingBanner: (no: string) => `A pending modify request exists for this mold (${no}); registry data unchanged`,
+    lastRequestLabel: 'Last Request',
+    reqSubmitted: 'Request submitted, pending review',
   },
 } as const;
+
+/** Empty mold draft used to reset the add/purchase dialog */
+const EMPTY_MOLD_DRAFT: Partial<Mold> = {
+  name: '',
+  nameEn: '',
+  supplier: '',
+  supplierEn: '',
+  factory: 'LD',
+  buId: BUS[0].id,
+  productId: '',
+  productName: '',
+  productNameEn: '',
+  cavities: 1,
+  runnerType: '热流道',
+  cycleTime: 30,
+  hourlyCapacity: 120,
+  oee: 0.9,
+  oeeReason: '',
+  oeeReasonEn: '',
+  quantity: 1,
+  unitPrice: 0,
+  totalPrice: 0,
+  lossCoefficient: 0.05,
+  lossReason: '',
+  lossReasonEn: '',
+  material: '',
+  materialLossCoeff: 0.02,
+  productWeight: 0,
+  wasteWeight: 0,
+  sprueWeight: 0,
+  monthlyCapacity: 0,
+  moldLength: 0,
+  moldWidth: 0,
+  moldThickness: 0,
+  location: '',
+  moldWeight: 0,
+  drawingNumber: '',
+  status: 'pending',
+  projectNumber: '',
+};
 
 const STATUS_COLOR: Record<Mold['status'], string> = {
   active: 'bg-[#e8f5e9] text-[#4a7c59]',
@@ -275,7 +399,6 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>('en');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [view, setView] = useState<'main' | 'analysis'>('main');
   const [confirmDialog, setConfirmDialog] = useState<{
     moldId: string;
     field: 'factory' | 'status';
@@ -286,44 +409,7 @@ export default function Home() {
   } | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
-  const [newMold, setNewMold] = useState<Partial<Mold>>({
-    name: '',
-    nameEn: '',
-    supplier: '',
-    supplierEn: '',
-    factory: 'LD',
-    buId: BUS[0].id,
-    productId: '',
-    productName: '',
-    productNameEn: '',
-    cavities: 1,
-    runnerType: '热流道',
-    cycleTime: 30,
-    hourlyCapacity: 120,
-    oee: 0.9,
-    oeeReason: '',
-    oeeReasonEn: '',
-    quantity: 1,
-    unitPrice: 0,
-    totalPrice: 0,
-    lossCoefficient: 0.05,
-    lossReason: '',
-    lossReasonEn: '',
-    material: '',
-    materialLossCoeff: 0.02,
-    productWeight: 0,
-    wasteWeight: 0,
-    sprueWeight: 0,
-    monthlyCapacity: 0,
-    moldLength: 0,
-    moldWidth: 0,
-    moldThickness: 0,
-    location: '',
-    moldWeight: 0,
-    drawingNumber: '',
-    status: 'pending',
-    projectNumber: '',
-  });
+  const [newMold, setNewMold] = useState<Partial<Mold>>(EMPTY_MOLD_DRAFT);
 
   // Configurable lists from admin panel
   const [factories, setFactories] = useState<string[]>([]);
@@ -334,6 +420,26 @@ export default function Home() {
   const [suppliers, setSuppliers] = useState<{ cn: string; en: string }[]>([]);
   const [assetOwnerships, setAssetOwnerships] = useState<{ cn: string; en: string }[]>([]);
   const [moldsLoaded, setMoldsLoaded] = useState(false);
+
+  // ── Approval workflow state ──
+  const [view, setView] = useState<'main' | 'analysis' | 'requests'>('main');
+  const [adminMode, setAdminModeState] = useState(false); // hydrated on mount (avoid SSR mismatch)
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [requests, setRequests] = useState<MoldRequest[]>([]);
+  // Detail-page draft edits (normal mode: edits are staged, not applied to registry)
+  const [draftEdits, setDraftEdits] = useState<Record<string, Record<string, unknown>>>({});
+  const [draftExpanded, setDraftExpanded] = useState(false);
+  const [draftReason, setDraftReason] = useState('');
+  const [draftApplicant, setDraftApplicant] = useState('');
+  const [draftError, setDraftError] = useState('');
+  // Purchase request (normal-mode add dialog)
+  const [purchaseReason, setPurchaseReason] = useState('');
+  const [purchaseApplicant, setPurchaseApplicant] = useState('');
+  const [purchaseError, setPurchaseError] = useState('');
+  const [notifyPending, setNotifyPending] = useState(false);
+  const [showRequestToast, setShowRequestToast] = useState(false); // show pending badge in standard mode
 
   // Load molds from localStorage on mount (client-side only to avoid hydration mismatch)
   useEffect(() => {
@@ -364,6 +470,12 @@ export default function Home() {
       }
     }
     setMoldsLoaded(true);
+    // ── Approval workflow hydration ──
+    setAdminModeState(isAdminMode());
+    purgeRequestsByRetention(getRequestRetentionDays());
+    setRequests(getRequests());
+    setDraftApplicant(getLastApplicant());
+    setNotifyPending(getPendingNotify());
     // Load configurable lists
     setFactories(getFactories());
     setProducts(getProducts());
@@ -388,9 +500,15 @@ export default function Home() {
     [lang],
   );
 
+  // Display molds: merge staged draft edits in standard mode (approval workflow)
+  const displayMolds = useMemo(() => {
+    if (adminMode) return molds;
+    return molds.map((m) => (draftEdits[m.id] ? { ...m, ...draftEdits[m.id] } : m));
+  }, [molds, draftEdits, adminMode]);
+
   // Filtered molds
   const filteredMolds = useMemo(() => {
-    return molds.filter((m) => {
+    return displayMolds.filter((m) => {
       if (selectedBU && m.buId !== selectedBU) return false;
       if (factoryFilter && m.factory !== factoryFilter) return false;
       if (searchText) {
@@ -406,7 +524,7 @@ export default function Home() {
       }
       return true;
     });
-  }, [molds, selectedBU, factoryFilter, searchText]);
+  }, [displayMolds, selectedBU, factoryFilter, searchText]);
 
   // BU stats
   const buStats = useMemo(() => {
@@ -463,6 +581,305 @@ export default function Home() {
     );
   }, []);
 
+  // ── Approval workflow helpers ──
+  const pendingCount = useMemo(() => requests.filter((r) => r.status === 'pending').length, [requests]);
+
+  // Numeric mold fields: coerce diff values back to numbers when applying
+  const NUMERIC_MOLD_FIELDS = [
+    'cavities', 'cycleTime', 'moldLength', 'moldWidth', 'moldThickness', 'moldWeight',
+    'oee', 'depreciationYears', 'quantity', 'unitPrice', 'sprueWeight', 'lossCoefficient',
+    'materialLossCoeff', 'productWeight', 'wasteWeight', 'hourlyCapacity',
+  ];
+
+  // Recalculate derived fields after applying an approved request patch
+  const recalcDerived = useCallback((m: Mold): Mold => {
+    const days = getMonthlyWorkDays();
+    const updated = { ...m };
+    if (updated.cycleTime > 0) {
+      const theoretical = Math.round(updated.cavities * (60 / updated.cycleTime) * 60);
+      updated.theoreticalHourlyCapacity = theoretical;
+      updated.actualHourlyCapacity = Math.round(theoretical * updated.oee);
+      updated.hourlyCapacity = updated.actualHourlyCapacity;
+      updated.theoreticalMonthlyCapacity = Math.round(theoretical * 24 * days / 10000 * 100) / 100;
+      updated.actualMonthlyCapacity = Math.round(updated.actualHourlyCapacity * 24 * days / 10000 * 100) / 100;
+      updated.monthlyCapacity = updated.actualMonthlyCapacity;
+    }
+    updated.totalPrice = updated.quantity * updated.unitPrice;
+    return updated;
+  }, []);
+
+  // MoldRow update wrapper: admin mode writes to registry; standard mode stages a draft
+  const handleRowUpdate = useCallback(
+    (id: string, field: keyof Mold, value: unknown) => {
+      if (adminMode) {
+        updateMold(id, field, value);
+        return;
+      }
+      setDraftEdits((prev) => ({ ...prev, [id]: { ...(prev[id] || {}), [field]: value } }));
+    },
+    [adminMode, updateMold]
+  );
+
+  // Pending modify request of a mold (detail panel banner)
+  const pendingForMold = useCallback(
+    (moldId: string) =>
+      requests.find((r) => r.type === 'modify' && r.moldId === moldId && r.status === 'pending'),
+    [requests]
+  );
+
+  // Submit modify request from detail panel (standard mode)
+  const submitDraftRequest = useCallback(
+    (moldId: string) => {
+      const mold = molds.find((m) => m.id === moldId);
+      if (!mold) return;
+      const draft = draftEdits[mold.id];
+      if (!draft || Object.keys(draft).length === 0) {
+        setDraftError(t.noChange);
+        return;
+      }
+      if (!draftReason.trim()) {
+        setDraftError(t.reqReasonRequired);
+        return;
+      }
+      if (!draftApplicant.trim()) {
+        setDraftError(t.reqApplicantRequired);
+        return;
+      }
+      const changes: FieldChange[] = Object.entries(draft).map(([field, value]) => ({
+        field,
+        label: FIELD_LABELS[field]?.zh ?? field,
+        labelEn: FIELD_LABELS[field]?.en ?? field,
+        oldValue: (mold[field as keyof Mold] ?? null) as string | number | null,
+        newValue: (value ?? null) as string | number | null,
+      }));
+      addRequest({
+        type: 'modify',
+        moldId: mold.id,
+        moldCode: mold.code,
+        changes,
+        reason: draftReason.trim(),
+        applicant: draftApplicant.trim(),
+      });
+      setLastApplicant(draftApplicant.trim());
+      setRequests(getRequests());
+      setDraftEdits((prev) => {
+        const next = { ...prev };
+        delete next[mold.id];
+        return next;
+      });
+      setDraftReason('');
+      setDraftExpanded(false);
+      setDraftError('');
+      setShowRequestToast(true);
+      setTimeout(() => setShowRequestToast(false), 4000);
+    },
+    [molds, draftEdits, draftReason, draftApplicant, t]
+  );
+
+  // Draft diff bar builder (standard mode, expanded detail row)
+  const renderDraftBar = useCallback(
+    (moldId: string) => {
+      const draft = draftEdits[moldId];
+      if (!draft || Object.keys(draft).length === 0) return null;
+      const mold = molds.find((m) => m.id === moldId);
+      if (!mold) return null;
+      const entries = Object.entries(draft);
+      return (
+        <div className="mt-4 rounded-xl border-2 border-dashed p-4" style={{ borderColor: '#a8d5a2', backgroundColor: '#f4faf0' }}>
+          <button
+            className="flex w-full items-center justify-between text-left"
+            onClick={() => setDraftExpanded(!draftExpanded)}
+          >
+            <span className="text-sm font-semibold" style={{ color: '#4a7c59' }}>
+              {(t.draftBarTitle as (n: number) => string)(entries.length)}
+            </span>
+            <span className="text-xs" style={{ color: '#6b7c6b' }}>{draftExpanded ? '▲' : '▼'}</span>
+          </button>
+          {draftExpanded && (
+            <div className="mt-3">
+              <div className="rounded-lg border px-3 py-2" style={{ borderColor: '#e0e8dc', backgroundColor: '#ffffff' }}>
+                {entries.map(([field, value]) => {
+                  const lbl = FIELD_LABELS[field];
+                  const oldV = (mold as unknown as Record<string, unknown>)[field];
+                  return (
+                    <div key={field} className="flex items-center gap-2 border-b py-1.5 text-xs last:border-b-0" style={{ borderColor: '#f0f4ec' }}>
+                      <span className="w-40 shrink-0 font-medium" style={{ color: '#2d3b2d' }}>
+                        {lang === 'zh' ? lbl?.zh ?? field : lbl?.en ?? field}
+                      </span>
+                      <span className="truncate" style={{ color: '#6b7c6b' }}>{String(oldV ?? '-')}</span>
+                      <span className="shrink-0 font-bold" style={{ color: '#4a7c59' }}>→</span>
+                      <span className="truncate font-medium" style={{ color: '#4a7c59' }}>{String(value ?? '-')}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
+                    {t.reqReasonLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                  </label>
+                  <input
+                    className="h-9 w-full rounded-lg border px-3 text-sm outline-none focus:border-[#4a7c59]"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                    placeholder={t.reqReasonPlaceholder}
+                    value={draftReason}
+                    onChange={(e) => { setDraftReason(e.target.value); setDraftError(''); }}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
+                    {t.reqApplicantLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                  </label>
+                  <input
+                    className="h-9 w-full rounded-lg border px-3 text-sm outline-none focus:border-[#4a7c59]"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                    placeholder={t.reqApplicantPlaceholder}
+                    value={draftApplicant}
+                    onChange={(e) => { setDraftApplicant(e.target.value); setDraftError(''); }}
+                  />
+                </div>
+              </div>
+              {draftError && (
+                <p className="mt-2 text-xs font-medium" style={{ color: '#e74c3c' }}>{draftError}</p>
+              )}
+              <div className="mt-3 flex gap-2">
+                <button
+                  className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#4a7c59' }}
+                  onClick={() => submitDraftRequest(moldId)}
+                >
+                  {t.reqSubmitModify}
+                </button>
+                <button
+                  className="h-9 rounded-lg border px-4 text-sm transition-all hover:opacity-80"
+                  style={{ borderColor: '#e0e8dc', color: '#6b7c6b' }}
+                  onClick={() => {
+                    setDraftEdits((prev) => {
+                      const next = { ...prev };
+                      delete next[moldId];
+                      return next;
+                    });
+                    setDraftReason('');
+                    setDraftExpanded(false);
+                    setDraftError('');
+                  }}
+                >
+                  {t.draftDiscard}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draftEdits, molds, draftExpanded, draftReason, draftApplicant, draftError, lang, t, submitDraftRequest]
+  );
+
+  // ── Approval actions ──
+  const approveRequest = useCallback(
+    (id: string, comment?: string) => {
+      const req = requests.find((r) => r.id === id);
+      if (!req || req.status !== 'pending') return;
+      if (req.type === 'modify' && req.moldId) {
+        const patch: Record<string, unknown> = { lastRequestNo: req.requestNo };
+        (req.changes || []).forEach((c) => {
+          patch[c.field] = NUMERIC_MOLD_FIELDS.includes(c.field) ? Number(c.newValue) : (c.newValue ?? '');
+        });
+        setMolds((prev) =>
+          prev.map((m) => (m.id === req.moldId ? recalcDerived({ ...m, ...(patch as Partial<Mold>) }) : m))
+        );
+      }
+      if (req.type === 'purchase' && req.newMold) {
+        const newId = `mold_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        const code = `M${String(molds.length + 1).padStart(4, '0')}`;
+        const newMold: Mold = recalcDerived({
+          ...(req.newMold as Mold),
+          id: newId,
+          code,
+          status: 'pending',
+          lastRequestNo: req.requestNo,
+        });
+        setMolds((prev) => [...prev, newMold]);
+      }
+      updateRequest(id, {
+        status: 'approved',
+        reviewer: 'admin',
+        reviewedAt: new Date().toISOString(),
+        reviewComment: comment?.trim() || undefined,
+      });
+      setRequests(getRequests());
+      setShowRequestToast(true);
+      setTimeout(() => setShowRequestToast(false), 4000);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requests, molds, recalcDerived]
+  );
+
+  const rejectRequest = useCallback(
+    (id: string, comment: string) => {
+      updateRequest(id, {
+        status: 'rejected',
+        reviewer: 'admin',
+        reviewedAt: new Date().toISOString(),
+        reviewComment: comment.trim(),
+      });
+      setRequests(getRequests());
+    },
+    [requests]
+  );
+
+  const withdrawRequest = useCallback(
+    (id: string) => {
+      updateRequest(id, { status: 'cancelled', reviewedAt: new Date().toISOString() });
+      setRequests(getRequests());
+    },
+    []
+  );
+
+  const resubmitRequest = useCallback(
+    (id: string) => {
+      const src = requests.find((r) => r.id === id);
+      if (!src) return;
+      addRequest({
+        type: src.type,
+        moldId: src.moldId,
+        moldCode: src.moldCode,
+        changes: src.changes,
+        newMold: src.newMold,
+        reason: src.reason,
+        applicant: src.applicant,
+        resubmitOf: src.id,
+      });
+      setRequests(getRequests());
+    },
+    [requests]
+  );
+
+  // ── Admin mode switching ──
+  const toggleAdminMode = useCallback(() => {
+    if (adminMode) {
+      setAdminMode(false);
+      setAdminModeState(false);
+    } else {
+      setShowPinDialog(true);
+      setPinInput('');
+      setPinError('');
+    }
+  }, [adminMode]);
+
+  const confirmPin = useCallback(() => {
+    if (pinInput === getAdminPin()) {
+      setAdminMode(true);
+      setAdminModeState(true);
+      setShowPinDialog(false);
+      setPinInput('');
+      setPinError('');
+    } else {
+      setPinError(t.adminPinError);
+    }
+  }, [pinInput, t]);
+
   // Export Excel
   const handleExport = useCallback(() => {
     const L = lang;
@@ -518,8 +935,35 @@ export default function Home() {
     XLSX.writeFile(wb, `${t.sheetName}.xlsx`);
   }, [filteredMolds, lang, t.sheetName, products]);
 
-  // Add new mold
+  // Add new mold (admin direct) / submit purchase request (standard mode)
   const handleAddMold = useCallback(() => {
+    // Standard mode: convert to purchase request, do not write to registry directly
+    if (!adminMode) {
+      if (!purchaseReason.trim()) {
+        setPurchaseError(T[lang].reqReasonRequired);
+        return;
+      }
+      if (!purchaseApplicant.trim()) {
+        setPurchaseError(T[lang].reqApplicantRequired);
+        return;
+      }
+      addRequest({
+        type: 'purchase',
+        newMold: { ...newMold },
+        reason: purchaseReason.trim(),
+        applicant: purchaseApplicant.trim(),
+      });
+      setLastApplicant(purchaseApplicant.trim());
+      setRequests(getRequests());
+      setPurchaseReason('');
+      setPurchaseApplicant('');
+      setPurchaseError('');
+      setShowAddModal(false);
+      setNewMold(EMPTY_MOLD_DRAFT);
+      setShowRequestToast(true);
+      setTimeout(() => setShowRequestToast(false), 4000);
+      return;
+    }
     const maxCode = molds.reduce((max, m) => {
       const num = parseInt(m.code.replace('M', '').replace('-', ''), 10);
       return num > max ? num : max;
@@ -673,6 +1117,114 @@ export default function Home() {
     );
   }
 
+  if (view === 'requests') {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#dce8d0' }}>
+        {/* Page Header */}
+        <div className="mx-auto max-w-[1400px] px-6 pt-6 pb-4">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#4a7c59' }}>
+            {t.pageTitle}
+          </h1>
+          <p className="mt-1.5 text-sm" style={{ color: '#6b7c6b' }}>
+            {t.pageSubtitle}
+          </p>
+        </div>
+        {/* Top Navigation Bar */}
+        <div className="mx-auto max-w-[1400px] px-6">
+          <div className="flex items-center justify-between h-14 rounded-2xl bg-white px-6" style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setView('main')}
+                className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#f0f7ec]"
+                style={{ color: '#5a6b5a' }}
+              >
+                {lang === 'zh' ? '模具台账' : 'Mold Registry'}
+              </button>
+              <button
+                onClick={() => setView('requests')}
+                className="relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200"
+                style={{ backgroundColor: '#e4f0dc', color: '#4a7c59' }}
+              >
+                {lang === 'zh' ? '申请审批' : 'Requests'}
+                {pendingCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+                    style={{ backgroundColor: '#e74c3c' }}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setView('analysis')}
+                className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#f0f7ec]"
+                style={{ color: '#5a6b5a' }}
+              >
+                {lang === 'zh' ? '数据分析' : 'Analysis'}
+              </button>
+              <a
+                href="/admin"
+                className="rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[#f0f7ec]"
+                style={{ color: '#5a6b5a' }}
+              >
+                {lang === 'zh' ? '后台管理' : 'Admin'}
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (adminMode) {
+                    setAdminMode(false);
+                    setAdminModeState(false);
+                  } else {
+                    setShowPinDialog(true);
+                    setPinInput('');
+                    setPinError('');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+                style={adminMode
+                  ? { backgroundColor: '#4a7c59', borderColor: '#4a7c59', color: '#ffffff' }
+                  : { backgroundColor: '#ffffff', borderColor: '#c9d8c0', color: '#6b7c6b' }}
+                title={adminMode ? (lang === 'zh' ? '点击退出管理员模式' : 'Click to exit admin mode') : (lang === 'zh' ? '点击进入管理员模式' : 'Click to enter admin mode')}
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {adminMode ? (
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                  ) : (
+                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  )}
+                </svg>
+                {adminMode
+                  ? (lang === 'zh' ? '管理员模式' : 'Admin Mode')
+                  : (lang === 'zh' ? '普通模式' : 'Standard Mode')}
+              </button>
+              <button
+                onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+                className="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+                style={{ backgroundColor: '#ffffff', borderColor: '#c9d8c0', color: '#6b7c6b' }}
+              >
+                {lang === 'zh' ? 'EN' : '中文'}
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* Requests Board */}
+        <div className="mx-auto max-w-[1400px] px-6 py-6">
+          <RequestBoard
+            lang={lang}
+            adminMode={adminMode}
+            requests={requests}
+            onApply={approveRequest}
+            onReject={rejectRequest}
+            onWithdraw={withdrawRequest}
+            onResubmit={resubmitRequest}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#dce8d0' }}>
       {/* Page Header */}
@@ -690,10 +1242,26 @@ export default function Home() {
         <div className="flex items-center justify-between h-14 rounded-2xl bg-white px-6" style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}>
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setView('main')}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ backgroundColor: '#e8f5e9', color: '#4a7c59' }}
+              style={view === 'main' ? { backgroundColor: '#e8f5e9', color: '#4a7c59' } : { color: '#6b7c6b' }}
             >
-              {lang === 'zh' ? '模具列表' : 'Mold List'}
+              {lang === 'zh' ? '模具台账' : 'Mold Registry'}
+            </button>
+            <button
+              onClick={() => setView('requests')}
+              className="relative px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: '#6b7c6b' }}
+            >
+              {lang === 'zh' ? '申请审批' : 'Requests'}
+              {(adminMode || notifyPending) && pendingCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+                  style={{ backgroundColor: '#e74c3c' }}
+                >
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setView('analysis')}
@@ -711,6 +1279,32 @@ export default function Home() {
             </a>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (adminMode) {
+                  setAdminMode(false);
+                  setAdminModeState(false);
+                } else {
+                  setShowPinDialog(true);
+                  setPinInput('');
+                  setPinError('');
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+              style={adminMode
+                ? { backgroundColor: '#4a7c59', borderColor: '#4a7c59', color: '#ffffff' }
+                : { backgroundColor: '#ffffff', borderColor: '#c9d8c0', color: '#6b7c6b' }}
+              title={adminMode ? (lang === 'zh' ? '点击退出管理员模式' : 'Click to exit admin mode') : (lang === 'zh' ? '点击进入管理员模式' : 'Click to enter admin mode')}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                {adminMode
+                  ? <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></>
+                  : <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>}
+              </svg>
+              {adminMode
+                ? (lang === 'zh' ? '管理员模式' : 'Admin Mode')
+                : (lang === 'zh' ? '普通模式' : 'Standard Mode')}
+            </button>
             <button
               onClick={() => setLang('zh')}
               className={`text-xs px-2 py-1 rounded ${lang === 'zh' ? 'font-bold' : ''}`}
@@ -853,7 +1447,7 @@ export default function Home() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              {t.addMold}
+              {adminMode ? t.addMold : t.purchaseBtn}
             </button>
             {/* Export button */}
             <button
@@ -1059,10 +1653,38 @@ export default function Home() {
                     statusLabel={statusLabel(mold.status)}
                     statusColor={STATUS_COLOR[mold.status]}
                     onToggle={() => setExpandedRow(isExpanded ? null : mold.id)}
-                    onUpdate={updateMold}
+                    onUpdate={handleRowUpdate}
                     onConfirmChange={(moldId, field, oldValue, newValue, oldLabel, newLabel) => {
                       setConfirmDialog({ moldId, field, oldValue, newValue, oldLabel, newLabel });
                     }}
+                    renderPendingBanner={
+                      (pendingForMold(mold.id) || mold.lastRequestNo) ? (
+                        <div className="mb-4">
+                          {pendingForMold(mold.id) && (
+                            <div
+                              className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm"
+                              style={{ borderColor: '#f39c12', backgroundColor: '#fef7e6', color: '#8a6d1a' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                              </svg>
+                              {(t.pendingBanner as (no: string) => string)(pendingForMold(mold.id)!.requestNo)}
+                            </div>
+                          )}
+                          {!pendingForMold(mold.id) && mold.lastRequestNo && (
+                            <div className="flex items-center gap-1.5 px-1 pb-1 text-xs" style={{ color: '#6b7c6b' }}>
+                              <span>{t.lastRequestLabel}:</span>
+                              <span className="font-medium" style={{ color: '#4a7c59' }}>{mold.lastRequestNo}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : null
+                    }
+                    renderDraftBar={
+                      !adminMode && draftEdits[mold.id] ? renderDraftBar(mold.id) : null
+                    }
                     onOEEValidationAlert={() => setAlertMessage(lang === 'zh' ? 'OEE低于0.9，必须填写原因后才能保存' : 'OEE is below 0.9, the reason must be filled in before saving')}
                     onDeleteClick={(moldId) => setDeleteDialog(moldId)}
                     lang={lang}
@@ -1091,8 +1713,57 @@ export default function Home() {
             newMold={newMold}
             onUpdate={updateNewMold}
             onSave={handleAddMold}
-            onCancel={() => setShowAddModal(false)}
+            onCancel={() => {
+              setShowAddModal(false);
+              setPurchaseReason('');
+              setPurchaseApplicant('');
+              setPurchaseError('');
+            }}
             lang={lang}
+            adminMode={adminMode}
+            renderRequestInfo={
+              !adminMode ? (
+                <div
+                  className="mb-4 rounded-2xl border p-4"
+                  style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}
+                >
+                  <h4 className="mb-3 text-sm font-semibold" style={{ color: '#4a7c59' }}>
+                    {t.requestInfoTitle}
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
+                        {t.reqReasonLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                      </label>
+                      <textarea
+                        value={purchaseReason}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPurchaseReason(e.target.value)}
+                        placeholder={t.reqReasonPlaceholder}
+                        rows={2}
+                        className="w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+                        style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
+                        {t.reqApplicantLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={purchaseApplicant}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPurchaseApplicant(e.target.value)}
+                        placeholder={t.reqApplicantPlaceholder}
+                        className="h-9 w-full rounded-lg border bg-white px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+                        style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                      />
+                    </div>
+                    {purchaseError && (
+                      <p className="text-xs" style={{ color: '#e74c3c' }}>{purchaseError}</p>
+                    )}
+                  </div>
+                </div>
+              ) : null
+            }
             products={products}
             factories={factories}
             runnerTypes={runnerTypes}
@@ -1121,7 +1792,11 @@ export default function Home() {
                 : `${confirmDialog.field === 'factory' ? 'Confirm changing factory from' : 'Confirm changing status from'} "${confirmDialog.oldLabel}" to "${confirmDialog.newLabel}"?`
             }
             onConfirm={() => {
-              updateMold(confirmDialog.moldId, confirmDialog.field, confirmDialog.newValue);
+              if (adminMode) {
+                updateMold(confirmDialog.moldId, confirmDialog.field, confirmDialog.newValue);
+              } else {
+                handleRowUpdate(confirmDialog.moldId, confirmDialog.field, confirmDialog.newValue);
+              }
               setConfirmDialog(null);
             }}
             onCancel={() => setConfirmDialog(null)}
@@ -1151,6 +1826,66 @@ export default function Home() {
             confirmLabel={T[lang].confirmDelete}
             danger
           />
+        )}
+        {/* Admin PIN Dialog */}
+        {showPinDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(45, 59, 45, 0.45)' }}>
+            <div className="w-[92%] max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+              <h3 className="text-base font-semibold" style={{ color: '#2d3b2d' }}>
+                {lang === 'zh' ? '切换为管理员模式' : 'Switch to Admin Mode'}
+              </h3>
+              <p className="mt-1 text-xs" style={{ color: '#6b7c6b' }}>
+                {lang === 'zh' ? '请输入管理口令以启用直接修改台账、审批申请等能力。' : 'Enter the admin PIN to enable direct registry editing and approvals.'}
+              </p>
+              <input
+                type="password"
+                value={pinInput}
+                autoFocus
+                onChange={(e) => {
+                  setPinInput(e.target.value);
+                  setPinError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmPin();
+                }}
+                placeholder={lang === 'zh' ? '管理口令' : 'Admin PIN'}
+                className="mt-4 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-[#4a7c59]"
+                style={{ borderColor: pinError ? '#e74c3c' : '#e0e8dc', color: '#2d3b2d' }}
+              />
+              {pinError && (
+                <p className="mt-2 text-xs" style={{ color: '#e74c3c' }}>{pinError}</p>
+              )}
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowPinDialog(false);
+                    setPinInput('');
+                    setPinError('');
+                  }}
+                  className="rounded-full px-4 py-2 text-sm transition-colors duration-200"
+                  style={{ color: '#6b7c6b' }}
+                >
+                  {lang === 'zh' ? '取消' : 'Cancel'}
+                </button>
+                <button
+                  onClick={confirmPin}
+                  className="rounded-full px-5 py-2 text-sm font-medium text-white transition-all duration-200"
+                  style={{ backgroundColor: '#4a7c59' }}
+                >
+                  {lang === 'zh' ? '确认' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Submit success toast */}
+        {showRequestToast && (
+          <div
+            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-lg"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            {T[lang].reqSubmitted}
+          </div>
         )}
       </div>
     </div>
@@ -1530,6 +2265,8 @@ function MoldRow({
   locations,
   suppliers,
   assetOwnerships,
+  renderPendingBanner,
+  renderDraftBar,
 }: {
   mold: Mold;
   isExpanded: boolean;
@@ -1548,6 +2285,8 @@ function MoldRow({
   locations: string[];
   suppliers: { cn: string; en: string }[];
   assetOwnerships: { cn: string; en: string }[];
+  renderPendingBanner?: React.ReactNode;
+  renderDraftBar?: React.ReactNode;
 }) {
   const t = T[lang];
   const totalPrice = mold.quantity * mold.unitPrice;
@@ -1637,6 +2376,7 @@ function MoldRow({
         <tr>
           <td colSpan={10} className="p-0">
             <div className="px-6 py-5" style={{ backgroundColor: '#f0f7ec' }}>
+              {renderPendingBanner}
               <div className="grid grid-cols-2 gap-8">
                 {/* Left column - Basic Info */}
                 <div>
@@ -2240,6 +2980,8 @@ function AddMoldModal({
   locations,
   suppliers,
   assetOwnerships,
+  adminMode,
+  renderRequestInfo,
 }: {
   newMold: Partial<Mold>;
   onUpdate: (field: keyof Mold, value: unknown) => void;
@@ -2253,6 +2995,8 @@ function AddMoldModal({
   locations: string[];
   suppliers: { cn: string; en: string }[];
   assetOwnerships: { cn: string; en: string }[];
+  adminMode: boolean;
+  renderRequestInfo?: React.ReactNode;
 }) {
   const t = T[lang];
   const totalPrice = (newMold.quantity || 1) * (newMold.unitPrice || 0);
@@ -2263,7 +3007,7 @@ function AddMoldModal({
         {/* Modal header */}
         <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
           <h3 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
-            {t.addMoldTitle}
+            {adminMode ? t.addMoldTitle : t.purchaseFormTitle}
           </h3>
           <button onClick={onCancel} className="rounded-lg p-1 transition-colors hover:bg-gray-100">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7c6b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2699,7 +3443,9 @@ function AddMoldModal({
           </div>
         </div>
 
-        {/* Modal footer */}
+        {/* Purchase request info (standard mode only) */}
+        {!adminMode && renderRequestInfo}
+
         <div className="flex items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
           <button
             onClick={onCancel}
@@ -2713,10 +3459,513 @@ function AddMoldModal({
             className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
             style={{ backgroundColor: '#4a7c59' }}
           >
-            {t.save}
+            {adminMode ? t.save : t.reqSubmitPurchase}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ═══ Request Board (approval page) ═══
+function RequestBoard({
+  lang,
+  adminMode,
+  requests,
+  onApply,
+  onReject,
+  onWithdraw,
+  onResubmit,
+}: {
+  lang: Lang;
+  adminMode: boolean;
+  requests: MoldRequest[];
+  onApply: (id: string, comment?: string) => void;
+  onReject: (id: string, comment: string) => void;
+  onWithdraw: (id: string) => void;
+  onResubmit: (id: string) => void;
+}) {
+  const zh = lang === 'zh';
+  const [statusTab, setStatusTab] = useState<'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'>('pending');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'modify' | 'purchase'>('all');
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [comment, setComment] = useState('');
+  const [commentError, setCommentError] = useState('');
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setProducts(getProducts());
+  }, []);
+
+  const L = {
+    title: zh ? '申请审批' : 'Requests',
+    subtitle: zh ? '修改与购买申请的提交、审批与历史记录' : 'Submit, review, and track modify & purchase requests',
+    pending: zh ? '待审批' : 'Pending',
+    approved: zh ? '已通过' : 'Approved',
+    rejected: zh ? '已驳回' : 'Rejected',
+    cancelled: zh ? '已撤回' : 'Cancelled',
+    all: zh ? '全部' : 'All',
+    typeModify: zh ? '修改申请' : 'Modify',
+    typePurchase: zh ? '购买申请' : 'Purchase',
+    typeAll: zh ? '全部类型' : 'All Types',
+    colNo: zh ? '单号' : 'Req. No.',
+    colType: zh ? '类型' : 'Type',
+    colTarget: zh ? '目标' : 'Target',
+    colApplicant: zh ? '申请人' : 'Applicant',
+    colStatus: zh ? '状态' : 'Status',
+    colTime: zh ? '提交时间' : 'Submitted',
+    colActions: zh ? '操作' : 'Actions',
+    view: zh ? '查看' : 'View',
+    withdraw: zh ? '撤回' : 'Withdraw',
+    resubmit: zh ? '重新提交' : 'Resubmit',
+    empty: zh ? '暂无申请记录' : 'No requests yet',
+    detailTitle: zh ? '申请详情' : 'Request Detail',
+    reason: zh ? '申请原因' : 'Reason',
+    applicant: zh ? '申请人' : 'Applicant',
+    appliedAt: zh ? '提交时间' : 'Submitted At',
+    reviewer: zh ? '审批人' : 'Reviewer',
+    reviewedAt: zh ? '审批时间' : 'Reviewed At',
+    reviewComment: zh ? '审批意见' : 'Review Comment',
+    resubmitOf: zh ? '重新提交自' : 'Resubmit of',
+    changesTitle: zh ? '变更清单' : 'Changes',
+    diffNote: zh ? '以下变更将在审批通过后写入台账' : 'Changes below will be applied to the registry after approval',
+    field: zh ? '字段' : 'Field',
+    oldValue: zh ? '当前值' : 'Current',
+    newValue: zh ? '申请值' : 'Requested',
+    purchaseDetail: zh ? '购买明细' : 'Purchase Detail',
+    totalAmount: zh ? '合计金额' : 'Total Amount',
+    willPending: zh ? '通过后模具将进入台账，状态为"设计中"' : 'After approval, the mold enters the registry with status "Pending"',
+    commentPlaceholder: zh ? '填写审批意见（驳回时必填）' : 'Review comment (required to reject)',
+    approve: zh ? '通过' : 'Approve',
+    reject: zh ? '驳回' : 'Reject',
+    waiting: zh ? '等待管理员审批' : 'Waiting for admin review',
+    items: zh ? '项变更' : 'changes',
+    copies: zh ? '套' : 'set(s)',
+    fMoldName: zh ? '模具名称' : 'Mold Name',
+    fFactory: zh ? '工厂' : 'Factory',
+    fBU: zh ? '所属BU' : 'Business Unit',
+    fProduct: zh ? '所属产品' : 'Product',
+    fSupplier: zh ? '供应商' : 'Supplier',
+    fCavities: zh ? '腔数' : 'Cavities',
+    fCycleTime: zh ? '周期(s)' : 'Cycle(s)',
+    fOEE: zh ? 'OEE' : 'OEE',
+    fUnitPrice: zh ? '单价(元)' : 'Unit Price',
+    fQuantity: zh ? '数量(套)' : 'Quantity',
+  };
+
+  const fmtTime = (iso?: string) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+
+  const fmtMoney = (v: number | null | undefined) =>
+    typeof v === 'number' ? `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}` : '-';
+
+  const REQ_STATUS_COLOR: Record<string, string> = {
+    pending: '#f39c12',
+    approved: '#4a7c59',
+    rejected: '#e74c3c',
+    cancelled: '#95a5a6',
+  };
+
+  const statusLabel = (s: string) => (L as Record<string, string>)[s] ?? s;
+
+  const statusBadge = (s: string) => (
+    <span
+      className="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium"
+      style={{ backgroundColor: `${REQ_STATUS_COLOR[s] ?? '#95a5a6'}1a`, color: REQ_STATUS_COLOR[s] ?? '#95a5a6' }}
+    >
+      {statusLabel(s)}
+    </span>
+  );
+
+  const typeBadge = (tp: string) => (
+    <span
+      className="inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium"
+      style={tp === 'modify' ? { backgroundColor: '#e8f0fe', color: '#5b7fb4' } : { backgroundColor: '#f4faf0', color: '#4a7c59' }}
+    >
+      {tp === 'modify' ? L.typeModify : L.typePurchase}
+    </span>
+  );
+
+  const targetText = (r: MoldRequest) => {
+    if (r.type === 'modify') return `${r.moldCode} · ${(r.changes || []).length} ${L.items}`;
+    const nm = r.newMold as Partial<Mold> | undefined;
+    return `${nm?.name ?? '-'} × ${nm?.quantity ?? 0} ${L.copies}`;
+  };
+
+  const filtered = useMemo(
+    () =>
+      requests
+        .filter((r) => (statusTab === 'all' ? true : r.status === statusTab))
+        .filter((r) => (typeFilter === 'all' ? true : r.type === typeFilter))
+        .sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : -1)),
+    [requests, statusTab, typeFilter]
+  );
+
+  const detail = detailId ? requests.find((r) => r.id === detailId) ?? null : null;
+
+  const pendingCountAll = requests.filter((r) => r.status === 'pending').length;
+
+  const tabDefs: { key: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'; label: string }[] = [
+    { key: 'pending', label: L.pending },
+    { key: 'approved', label: L.approved },
+    { key: 'rejected', label: L.rejected },
+    { key: 'cancelled', label: L.cancelled },
+    { key: 'all', label: L.all },
+  ];
+
+  const closeDetail = () => {
+    setDetailId(null);
+    setComment('');
+    setCommentError('');
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-5">
+        <h2 className="text-xl font-bold" style={{ color: '#4a7c59' }}>
+          {L.title}
+        </h2>
+        <p className="mt-1 text-sm" style={{ color: '#6b7c6b' }}>
+          {L.subtitle}
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex overflow-hidden rounded-xl bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          {tabDefs.map((tb) => (
+            <button
+              key={tb.key}
+              onClick={() => setStatusTab(tb.key)}
+              className="relative px-4 py-2 text-sm font-medium transition-colors"
+              style={statusTab === tb.key ? { backgroundColor: '#e8f5e9', color: '#4a7c59' } : { color: '#6b7c6b' }}
+            >
+              {tb.label}
+              {tb.key === 'pending' && pendingCountAll > 0 && (
+                <span
+                  className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+                  style={{ backgroundColor: '#e74c3c' }}
+                >
+                  {pendingCountAll > 99 ? '99+' : pendingCountAll}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as 'all' | 'modify' | 'purchase')}
+          className="h-9 rounded-xl border bg-white px-3 text-sm outline-none"
+          style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+        >
+          <option value="all">{L.typeAll}</option>
+          <option value="modify">{L.typeModify}</option>
+          <option value="purchase">{L.typePurchase}</option>
+        </select>
+      </div>
+
+      {/* List */}
+      <div className="overflow-hidden rounded-2xl bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-sm" style={{ color: '#6b7c6b' }}>
+            {L.empty}
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b" style={{ borderColor: '#e0e8dc', backgroundColor: '#f7faf5' }}>
+                {[L.colNo, L.colType, L.colTarget, L.colApplicant, L.colStatus, L.colTime, L.colActions].map((h, i) => (
+                  <th key={i} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: '#6b7c6b' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
+                <tr key={r.id} className="border-b last:border-b-0 hover:bg-[#f7faf5]" style={{ borderColor: '#f0f4ec' }}>
+                  <td className="px-4 py-3 font-mono text-xs" style={{ color: '#2d3b2d' }}>
+                    {r.requestNo}
+                  </td>
+                  <td className="px-4 py-3">{typeBadge(r.type)}</td>
+                  <td className="max-w-[260px] truncate px-4 py-3" style={{ color: '#2d3b2d' }}>
+                    {targetText(r)}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: '#2d3b2d' }}>
+                    {r.applicant}
+                  </td>
+                  <td className="px-4 py-3">{statusBadge(r.status)}</td>
+                  <td className="px-4 py-3 text-xs" style={{ color: '#6b7c6b' }}>
+                    {fmtTime(r.appliedAt)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="text-xs font-medium transition-colors hover:underline"
+                        style={{ color: '#4a7c59' }}
+                        onClick={() => {
+                          setDetailId(r.id);
+                          setComment('');
+                          setCommentError('');
+                        }}
+                      >
+                        {L.view}
+                      </button>
+                      {r.status === 'pending' && !adminMode && (
+                        <button
+                          className="text-xs transition-colors hover:underline"
+                          style={{ color: '#95a5a6' }}
+                          onClick={() => onWithdraw(r.id)}
+                        >
+                          {L.withdraw}
+                        </button>
+                      )}
+                      {(r.status === 'rejected' || r.status === 'cancelled') && (
+                        <button
+                          className="text-xs font-medium transition-colors hover:underline"
+                          style={{ color: '#5b7fb4' }}
+                          onClick={() => onResubmit(r.id)}
+                        >
+                          {L.resubmit}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Detail dialog */}
+      {detail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+          <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.18)' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-bold" style={{ color: '#2d3b2d' }}>
+                  {L.detailTitle}
+                </h3>
+                <span className="font-mono text-xs" style={{ color: '#6b7c6b' }}>
+                  {detail.requestNo}
+                </span>
+                {typeBadge(detail.type)}
+                {statusBadge(detail.status)}
+              </div>
+              <button onClick={closeDetail} className="text-lg leading-none" style={{ color: '#6b7c6b' }}>
+                ×
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {/* Modify: diff table */}
+              {detail.type === 'modify' && (
+                <div className="mb-5">
+                  <p className="mb-2 text-xs" style={{ color: '#6b7c6b' }}>
+                    {L.diffNote}
+                  </p>
+                  <div className="overflow-hidden rounded-xl border" style={{ borderColor: '#e0e8dc' }}>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: '#f7faf5' }}>
+                          {[L.field, L.oldValue, L.newValue].map((h, i) => (
+                            <th key={i} className="px-4 py-2.5 text-left text-xs font-semibold" style={{ color: '#6b7c6b' }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(detail.changes || []).map((c, i) => (
+                          <tr key={i} className="border-t" style={{ borderColor: '#f0f4ec' }}>
+                            <td className="px-4 py-2.5 font-medium" style={{ color: '#2d3b2d' }}>
+                              {zh ? c.label : c.labelEn || c.label}
+                            </td>
+                            <td className="px-4 py-2.5" style={{ color: '#6b7c6b' }}>
+                              {String(c.oldValue ?? '-')}
+                            </td>
+                            <td className="px-4 py-2.5 font-medium" style={{ color: '#4a7c59' }}>
+                              {String(c.newValue ?? '-')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Purchase: field summary */}
+              {detail.type === 'purchase' && detail.newMold && (() => {
+                const nm = detail.newMold as Partial<Mold>;
+                const buName = BUS.find((b) => b.id === nm.buId)?.name ?? nm.buId ?? '-';
+                const prod = products.find((p) => p.id === nm.productId);
+                const prodName = prod ? (zh ? prod.name : prod.nameEn || prod.name) : nm.productId ?? '-';
+                const total = (nm.unitPrice ?? 0) * (nm.quantity ?? 0);
+                const rows: { k: string; v: string }[] = [
+                  { k: L.fMoldName, v: nm.name ?? '-' },
+                  { k: L.fFactory, v: nm.factory ?? '-' },
+                  { k: L.fBU, v: buName },
+                  { k: L.fProduct, v: prodName },
+                  { k: L.fSupplier, v: nm.supplier ?? '-' },
+                  { k: L.fCavities, v: String(nm.cavities ?? '-') },
+                  { k: L.fCycleTime, v: String(nm.cycleTime ?? '-') },
+                  { k: L.fOEE, v: String(nm.oee ?? '-') },
+                  { k: L.fUnitPrice, v: fmtMoney(nm.unitPrice) },
+                  { k: L.fQuantity, v: `${nm.quantity ?? 0} ${L.copies}` },
+                ];
+                return (
+                  <div className="mb-5">
+                    <div className="overflow-hidden rounded-xl border" style={{ borderColor: '#e0e8dc' }}>
+                      <div className="px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: '#f7faf5', color: '#6b7c6b' }}>
+                        {L.purchaseDetail}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-6 px-4 py-3">
+                        {rows.map((row) => (
+                          <div key={row.k} className="flex items-center justify-between border-b py-2 text-sm last:border-b-0" style={{ borderColor: '#f0f4ec' }}>
+                            <span className="text-xs" style={{ color: '#6b7c6b' }}>
+                              {row.k}
+                            </span>
+                            <span className="font-medium" style={{ color: '#2d3b2d' }}>
+                              {row.v}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: '#f7faf5' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>
+                          {L.totalAmount}
+                        </span>
+                        <span className="text-base font-bold" style={{ color: '#4a7c59' }}>
+                          {fmtMoney(total)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs" style={{ color: '#6b7c6b' }}>
+                      {L.willPending}
+                    </p>
+                  </div>
+                );
+              })()}
+
+              {/* Meta info */}
+              <div className="rounded-xl border p-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#fafcf8' }}>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <span className="text-xs" style={{ color: '#6b7c6b' }}>{L.applicant}：</span>
+                    <span style={{ color: '#2d3b2d' }}>{detail.applicant}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs" style={{ color: '#6b7c6b' }}>{L.appliedAt}：</span>
+                    <span style={{ color: '#2d3b2d' }}>{fmtTime(detail.appliedAt)}</span>
+                  </div>
+                  {detail.resubmitOf && (
+                    <div className="col-span-2">
+                      <span className="text-xs" style={{ color: '#6b7c6b' }}>{L.resubmitOf}：</span>
+                      <span className="font-mono text-xs" style={{ color: '#2d3b2d' }}>{detail.resubmitOf}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3">
+                  <span className="text-xs" style={{ color: '#6b7c6b' }}>{L.reason}：</span>
+                  <p className="mt-1 text-sm" style={{ color: '#2d3b2d' }}>{detail.reason || '-'}</p>
+                </div>
+                {(detail.status === 'approved' || detail.status === 'rejected') && (
+                  <div className="mt-3 border-t pt-3" style={{ borderColor: '#f0f4ec' }}>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <span className="text-xs" style={{ color: '#6b7c6b' }}>{L.reviewer}：</span>
+                        <span style={{ color: '#2d3b2d' }}>{detail.reviewer ?? '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs" style={{ color: '#6b7c6b' }}>{L.reviewedAt}：</span>
+                        <span style={{ color: '#2d3b2d' }}>{fmtTime(detail.reviewedAt)}</span>
+                      </div>
+                    </div>
+                    {detail.reviewComment && (
+                      <p className="mt-2 text-sm" style={{ color: detail.status === 'rejected' ? '#e74c3c' : '#2d3b2d' }}>
+                        {L.reviewComment}：{detail.reviewComment}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Admin review area */}
+              {detail.status === 'pending' && adminMode && (
+                <div className="mt-4">
+                  <textarea
+                    className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-[#4a7c59]"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d', minHeight: '72px', resize: 'vertical' }}
+                    placeholder={L.commentPlaceholder}
+                    value={comment}
+                    onChange={(e) => {
+                      setComment(e.target.value);
+                      setCommentError('');
+                    }}
+                  />
+                  {commentError && (
+                    <p className="mt-1 text-xs font-medium" style={{ color: '#e74c3c' }}>{commentError}</p>
+                  )}
+                </div>
+              )}
+              {detail.status === 'pending' && !adminMode && (
+                <p className="mt-4 rounded-xl px-4 py-3 text-xs" style={{ backgroundColor: '#fdf6e9', color: '#b07d2b' }}>
+                  {L.waiting}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: '#e0e8dc' }}>
+              {detail.status === 'pending' && adminMode ? (
+                <>
+                  <button
+                    className="h-9 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-red-50"
+                    style={{ borderColor: '#e74c3c', color: '#e74c3c' }}
+                    onClick={() => {
+                      if (!comment.trim()) {
+                        setCommentError(zh ? '驳回时必须填写审批意见' : 'Review comment is required to reject');
+                        return;
+                      }
+                      onReject(detail.id, comment);
+                      closeDetail();
+                    }}
+                  >
+                    {L.reject}
+                  </button>
+                  <button
+                    className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+                    style={{ backgroundColor: '#4a7c59' }}
+                    onClick={() => {
+                      onApply(detail.id, comment);
+                      closeDetail();
+                    }}
+                  >
+                    {L.approve}
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="h-9 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+                  style={{ borderColor: '#e0e8dc', color: '#6b7c6b' }}
+                  onClick={closeDetail}
+                >
+                  {zh ? '关闭' : 'Close'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

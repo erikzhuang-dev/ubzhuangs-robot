@@ -45,9 +45,44 @@ export interface Mold {
   actualMonthlyCapacity?: number; // 实际月产能(万)
   commissionDate?: string; // 启用时间
   depreciationYears?: number; // 折旧年数
+  lastRequestNo?: string; // 最近一次生效的修改申请单号
   assetOwnership?: string; // 资产归属
   assetOwnershipEn?: string; // 资产归属(英文)
   status: 'active' | 'maintenance' | 'retired' | 'pending';
+}
+
+/** 字段变更对（修改申请用） */
+export interface FieldChange {
+  field: string; // Mold 字段名，如 'cavities'
+  label: string; // 中文字段名，如 '腔数'
+  labelEn: string; // 英文字段名
+  oldValue: string | number | null; // 台账原值（提交时快照）
+  newValue: string | number | null; // 申请修改值
+}
+
+export type MoldRequestType = 'modify' | 'purchase';
+export type MoldRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+/** 申请单实体（修改申请 / 购买申请共用） */
+export interface MoldRequest {
+  id: string; // req_{ts}_{rand}
+  requestNo: string; // REQ-M-YYYYMMDD-NNN / REQ-P-YYYYMMDD-NNN
+  type: MoldRequestType;
+  // ── 修改申请 ──
+  moldId?: string; // 目标模具 id（修改类必填）
+  moldCode?: string; // 冗余模具编号（防模具被删后显示空白）
+  changes?: FieldChange[]; // 字段变更对
+  // ── 购买申请 ──
+  newMold?: Partial<Mold>; // 采购模具全字段草稿（通过时生成 id/编号）
+  // ── 公共 ──
+  reason: string; // 申请原因（必填）
+  status: MoldRequestStatus;
+  applicant: string; // 申请人姓名
+  appliedAt: string; // 提交时间 ISO
+  reviewer?: string; // 审批人（固定 'admin'）
+  reviewedAt?: string; // 审批时间
+  reviewComment?: string; // 审批意见（驳回时必填）
+  resubmitOf?: string; // 重新提交时指向原单 id（追溯链）
 }
 
 export interface Product {

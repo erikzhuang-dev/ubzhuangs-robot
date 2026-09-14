@@ -12,10 +12,14 @@ import {
   getSuppliers, setSuppliers,
   getAssetOwnerships, setAssetOwnerships,
   getMonthlyWorkDays, setMonthlyWorkDays, DEFAULT_MONTHLY_WORK_DAYS,
+  getAdminPin, setAdminPin,
+  getPendingNotify, setPendingNotify,
+  getRequestRetentionDays, setRequestRetentionDays,
 } from '@/lib/config-store';
+import { purgeRequestsByRetention } from '@/lib/request-store';
 import type { Product } from '@/lib/types';
 
-type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships' | 'formula';
+type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships' | 'formula' | 'approval';
 type Lang = 'en' | 'zh';
 
 const translations = {
@@ -58,6 +62,19 @@ const translations = {
     workDays: 'Working Days per Month',
     workDaysDesc: 'Parameter used in monthly capacity calculation.',
     workDaysSaved: 'Saved automatically. Monthly capacity recalculates when you return to the home page.',
+    approval: 'Approval',
+    approvalPin: 'Admin PIN',
+    approvalPinDesc: 'Used in "Switch Identity" on the home page to enter admin mode. Default: admin123.',
+    newPin: 'New PIN',
+    confirmPin: 'Confirm New PIN',
+    pinMismatch: 'PINs do not match',
+    pinTooShort: 'PIN must be at least 4 characters',
+    approvalNotify: 'Pending badge on home page',
+    approvalNotifyDesc: 'Show the pending-request count badge for standard users on the home page.',
+    retention: 'Request Retention (days)',
+    retentionDesc: 'Approved / rejected / cancelled requests older than this many days will be purged. 0 = keep forever.',
+    on: 'On',
+    off: 'Off',
   },
   zh: {
     title: '后台管理',
@@ -98,10 +115,23 @@ const translations = {
     workDays: '每月工作天数',
     workDaysDesc: '月产能计算的参数，返回主页后按新天数重新计算',
     workDaysSaved: '已自动保存，返回主页后按新天数重算月产能',
+    approval: '审批设置',
+    approvalPin: '管理员口令',
+    approvalPinDesc: '主页"身份切换"进入管理员模式时使用，默认 admin123',
+    newPin: '新口令',
+    confirmPin: '确认新口令',
+    pinMismatch: '两次输入的口令不一致',
+    pinTooShort: '口令至少 4 位',
+    approvalNotify: '主页待审批角标提醒',
+    approvalNotifyDesc: '开启后，普通用户主页导航会显示待审批申请数量角标',
+    retention: '申请单保留天数',
+    retentionDesc: '超过该天数的已通过/已驳回/已撤回申请单将被自动清理，0 表示永久保留',
+    on: '开',
+    off: '关',
   },
 };
 
-const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships', 'formula'];
+const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships', 'formula', 'approval'];
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('factories');
@@ -450,6 +480,7 @@ export default function AdminPage() {
             />
           )}
           {tab === 'formula' && <FormulaPanel lang={lang} />}
+          {tab === 'approval' && <ApprovalPanel lang={lang} />}
         </div>
       </div>
     </div>
@@ -597,6 +628,126 @@ function StringList({
         {items.length === 0 && (
           <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>{t.empty}</div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Approval settings panel ──
+function ApprovalPanel({ lang }: { lang: Lang }) {
+  const t = translations[lang];
+  const [pin, setPin] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [pinMsg, setPinMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [notify, setNotify] = useState(true);
+  const [retention, setRetention] = useState(0);
+
+  useEffect(() => {
+    setNotify(getPendingNotify());
+    setRetention(getRequestRetentionDays());
+  }, []);
+
+  const handleSavePin = () => {
+    if (pin.length < 4) {
+      setPinMsg({ ok: false, text: t.pinTooShort });
+      return;
+    }
+    if (pin !== pinConfirm) {
+      setPinMsg({ ok: false, text: t.pinMismatch });
+      return;
+    }
+    setAdminPin(pin);
+    setPin('');
+    setPinConfirm('');
+    setPinMsg({ ok: true, text: lang === 'zh' ? '口令已更新' : 'PIN updated' });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Admin PIN */}
+      <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.approvalPin}</h4>
+        <p className="mt-0.5 text-xs" style={{ color: '#6b7c6b' }}>{t.approvalPinDesc}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            type="password"
+            placeholder={t.newPin}
+            value={pin}
+            onChange={(e) => { setPin(e.target.value); setPinMsg(null); }}
+            className="h-9 w-44 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+            style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+          />
+          <input
+            type="password"
+            placeholder={t.confirmPin}
+            value={pinConfirm}
+            onChange={(e) => { setPinConfirm(e.target.value); setPinMsg(null); }}
+            className="h-9 w-44 rounded-lg border px-3 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+            style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+          />
+          <button
+            onClick={handleSavePin}
+            className="h-9 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            {t.save}
+          </button>
+        </div>
+        {pinMsg && (
+          <p className="mt-2 text-xs font-medium" style={{ color: pinMsg.ok ? '#4a7c59' : '#e74c3c' }}>
+            {pinMsg.text}
+          </p>
+        )}
+      </div>
+
+      {/* Pending badge notify */}
+      <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.approvalNotify}</h4>
+            <p className="mt-0.5 text-xs" style={{ color: '#6b7c6b' }}>{t.approvalNotifyDesc}</p>
+          </div>
+          <button
+            onClick={() => { const next = !notify; setNotify(next); setPendingNotify(next); }}
+            className="relative h-7 w-12 shrink-0 rounded-full transition-colors"
+            style={{ backgroundColor: notify ? '#4a7c59' : '#cfd8cc' }}
+          >
+            <span
+              className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all"
+              style={{ left: notify ? '22px' : '2px' }}
+            />
+            <span
+              className="absolute top-1 text-[10px] font-bold"
+              style={{ left: notify ? '8px' : 'auto', right: notify ? 'auto' : '8px', color: notify ? '#fff' : '#6b7c6b' }}
+            >
+              {notify ? t.on : t.off}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Retention days */}
+      <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.retention}</h4>
+            <p className="mt-0.5 text-xs" style={{ color: '#6b7c6b' }}>{t.retentionDesc}</p>
+          </div>
+          <input
+            type="number"
+            min={0}
+            max={3650}
+            value={retention}
+            onChange={(e) => {
+              const n = Math.max(0, Math.min(3650, Math.floor(Number(e.target.value) || 0)));
+              setRetention(n);
+              setRequestRetentionDays(n);
+              purgeRequestsByRetention(n);
+            }}
+            className="h-9 w-24 shrink-0 rounded-lg border px-3 text-center text-sm outline-none transition-colors focus:border-[#4a7c59]"
+            style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+          />
+        </div>
       </div>
     </div>
   );
