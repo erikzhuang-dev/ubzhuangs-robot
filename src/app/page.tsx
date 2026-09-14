@@ -1359,8 +1359,8 @@ export default function Home() {
               <>
                 <button
                   onClick={openModifyModal}
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
-                  style={{ backgroundColor: '#ffffff', borderColor: '#c9d8c0', color: '#4a7c59' }}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90"
+                  style={{ backgroundColor: '#4a7c59' }}
                   title={lang === 'zh' ? '提交模具修改申请' : 'Submit a mold modify request'}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
