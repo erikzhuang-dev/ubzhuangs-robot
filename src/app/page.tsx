@@ -3739,6 +3739,7 @@ function RequestBoard({
     colStatus: zh ? '状态' : 'Status',
     colTime: zh ? '提交时间' : 'Submitted',
     colActions: zh ? '操作' : 'Actions',
+    unreadTip: zh ? '新审批结果' : 'New review result',
     view: zh ? '查看' : 'View',
     withdraw: zh ? '撤回' : 'Withdraw',
     resubmit: zh ? '重新提交' : 'Resubmit',
@@ -3958,7 +3959,16 @@ function RequestBoard({
                           if (!adminMode && onMarkRead && !r.applicantRead) onMarkRead(r.id);
                         }}
                       >
-                        {L.view}
+                        <span className="relative inline-block">
+                          {L.view}
+                          {!adminMode && !r.applicantRead && (
+                            <span
+                              className="absolute -right-1.5 -top-1 h-2 w-2 rounded-full"
+                              style={{ backgroundColor: '#f5b301' }}
+                              title={L.unreadTip}
+                            />
+                          )}
+                        </span>
                       </button>
                       {r.status === 'pending' && !adminMode && (
                         <button
