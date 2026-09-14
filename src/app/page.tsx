@@ -364,6 +364,15 @@ const EMPTY_MOLD_DRAFT: Partial<Mold> = {
   location: '',
   moldWeight: 0,
   drawingNumber: '',
+  moldType: 'mass',
+  assetOwnership: '',
+  assetOwnershipEn: '',
+  theoreticalHourlyCapacity: 0,
+  actualHourlyCapacity: 0,
+  theoreticalMonthlyCapacity: 0,
+  actualMonthlyCapacity: 0,
+  commissionDate: '',
+  depreciationYears: 0,
   status: 'pending',
   projectNumber: '',
 };
@@ -1019,53 +1028,8 @@ export default function Home() {
     setMolds((prev) => [...prev, mold]);
     setShowAddModal(false);
     setExpandedRow(mold.id);
-    setNewMold({
-      name: '',
-      nameEn: '',
-      supplier: '',
-      supplierEn: '',
-      factory: 'LD',
-      buId: BUS[0].id,
-      productId: '',
-      productName: '',
-      productNameEn: '',
-      cavities: 1,
-      runnerType: '热流道',
-      cycleTime: 30,
-      hourlyCapacity: 120,
-      oee: 0.9,
-      oeeReason: '',
-      oeeReasonEn: '',
-      quantity: 1,
-      unitPrice: 0,
-      totalPrice: 0,
-      lossCoefficient: 0.05,
-      lossReason: '',
-      lossReasonEn: '',
-      material: '',
-      materialLossCoeff: 0.02,
-      productWeight: 0,
-      wasteWeight: 0,
-      sprueWeight: 0,
-      monthlyCapacity: 0,
-      moldLength: 0,
-      moldWidth: 0,
-      moldThickness: 0,
-      location: '',
-      moldWeight: 0,
-      drawingNumber: '',
-      moldType: 'mass',
-      assetOwnership: '',
-      assetOwnershipEn: '',
-      theoreticalHourlyCapacity: 0,
-      actualHourlyCapacity: 0,
-      theoreticalMonthlyCapacity: 0,
-      actualMonthlyCapacity: 0,
-      commissionDate: '',
-      depreciationYears: 0,
-      status: 'pending',
-    });
-  }, [molds, newMold]);
+    setNewMold(EMPTY_MOLD_DRAFT);
+  }, [molds, newMold, adminMode, lang, purchaseReason, purchaseApplicant]);
 
   const updateNewMold = useCallback((field: keyof Mold, value: unknown) => {
     setNewMold((prev) => {
