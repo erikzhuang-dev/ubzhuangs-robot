@@ -195,6 +195,18 @@ const T = {
     reqSubmitModify: '提交修改申请',
     reqSubmitPurchase: '提交购买申请',
     purchaseBtn: '购买申请',
+    modReqTitle: '修改申请',
+    modReqDesc: '提交后进入审批流程，管理员审批通过后计入修改清单',
+    modTargetLabel: '目标模具',
+    modTargetPlaceholder: '请选择模具',
+    reqTargetRequired: '请选择目标模具',
+    modTypeLabel: '修改内容',
+    modTypeDimension: '尺寸修改',
+    modTypeWear: '磨损维修',
+    modTypeOther: '其他修改',
+    modDescLabel: '修改说明',
+    modDescPlaceholder: '请填写修改说明（选填）',
+    modDescRequired: '其他修改请写清修改内容',
     purchaseFormTitle: '模具购买申请',
     requestInfoTitle: '购买申请信息（提交后进入审批流程）',
     pendingBanner: (no: string) => `该模具存在待审批的修改申请（${no}），台账数据未变更`,
@@ -326,6 +338,18 @@ const T = {
     reqSubmitModify: 'Submit Modify Request',
     reqSubmitPurchase: 'Submit Purchase Request',
     purchaseBtn: 'Purchase Request',
+    modReqTitle: 'Modify Request',
+    modReqDesc: 'Enters approval flow after submit; recorded in the modification log once approved',
+    modTargetLabel: 'Target Mold',
+    modTargetPlaceholder: 'Select a mold',
+    reqTargetRequired: 'Please select a target mold',
+    modTypeLabel: 'Modify Type',
+    modTypeDimension: 'Dimension Modification',
+    modTypeWear: 'Wear & Repair',
+    modTypeOther: 'Other Modification',
+    modDescLabel: 'Description',
+    modDescPlaceholder: 'Description (optional)',
+    modDescRequired: 'Please describe the modification for "Other"',
     purchaseFormTitle: 'Mold Purchase Request',
     requestInfoTitle: 'Purchase request info (enters approval flow after submit)',
     pendingBanner: (no: string) => `A pending modify request exists for this mold (${no}); registry data unchanged`,
@@ -413,6 +437,12 @@ export default function Home() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>('en');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showModifyModal, setShowModifyModal] = useState(false);
+  const [modTargetMoldId, setModTargetMoldId] = useState('');
+  const [modType, setModType] = useState<'dimensionRepair' | 'wearRepair' | 'other'>('dimensionRepair');
+  const [modDesc, setModDesc] = useState('');
+  const [modApplicant, setModApplicant] = useState('');
+  const [modError, setModError] = useState('');
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     moldId: string;
@@ -798,9 +828,11 @@ export default function Home() {
       if (!req || req.status !== 'pending') return;
       if (req.type === 'modify' && req.moldId) {
         const patch: Record<string, unknown> = { lastRequestNo: req.requestNo };
-        (req.changes || []).forEach((c) => {
-          patch[c.field] = NUMERIC_MOLD_FIELDS.includes(c.field) ? Number(c.newValue) : (c.newValue ?? '');
-        });
+        (req.changes || [])
+          .filter((c) => c.field in FIELD_LABELS)
+          .forEach((c) => {
+            patch[c.field] = NUMERIC_MOLD_FIELDS.includes(c.field) ? Number(c.newValue) : (c.newValue ?? '');
+          });
         setMolds((prev) =>
           prev.map((m) => (m.id === req.moldId ? recalcDerived({ ...m, ...(patch as Partial<Mold>) }) : m))
         );
@@ -1036,6 +1068,72 @@ export default function Home() {
     setExpandedRow(mold.id);
     setNewMold(EMPTY_MOLD_DRAFT);
   }, [molds, newMold, adminMode, lang, purchaseReason, purchaseApplicant]);
+
+  const openModifyModal = useCallback(() => {
+    setModTargetMoldId('');
+    setModType('dimensionRepair');
+    setModDesc('');
+    setModError('');
+    setModApplicant(getLastApplicant());
+    setShowModifyModal(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submitModifyRequest = useCallback(() => {
+    if (!modTargetMoldId) {
+      setModError(T[lang].reqTargetRequired);
+      return;
+    }
+    const target = molds.find((m) => m.id === modTargetMoldId);
+    if (!target) return;
+    if (modType === 'other' && !modDesc.trim()) {
+      setModError(T[lang].modDescRequired);
+      return;
+    }
+    if (!modApplicant.trim()) {
+      setModError(T[lang].reqApplicantRequired);
+      return;
+    }
+    const typeLabels: Record<string, { zh: string; en: string }> = {
+      dimensionRepair: { zh: '尺寸修改', en: 'Dimension Modification' },
+      wearRepair: { zh: '磨损维修', en: 'Wear & Repair' },
+      other: { zh: '其他修改', en: 'Other Modification' },
+    };
+    const typeLabel = typeLabels[modType][lang];
+    const changes: FieldChange[] = [
+      {
+        field: 'modifyType',
+        label: lang === 'zh' ? '修改内容' : 'Modify Type',
+        labelEn: 'Modify Type',
+        oldValue: '',
+        newValue: typeLabel,
+      },
+    ];
+    if (modDesc.trim()) {
+      changes.push({
+        field: 'modifyDesc',
+        label: lang === 'zh' ? '修改说明' : 'Description',
+        labelEn: 'Description',
+        oldValue: '',
+        newValue: modDesc.trim(),
+      });
+    }
+    addRequest({
+      type: 'modify',
+      moldId: target.id,
+      moldCode: target.code,
+      changes,
+      reason: modDesc.trim() || typeLabel,
+      applicant: modApplicant.trim(),
+    });
+    setLastApplicant(modApplicant.trim());
+    setRequests(getRequests());
+    setNotifyPending(true);
+    setShowModifyModal(false);
+    setShowRequestToast(true);
+    setTimeout(() => setShowRequestToast(false), 4000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modTargetMoldId, modType, modDesc, modApplicant, molds, lang]);
 
   const updateNewMold = useCallback((field: keyof Mold, value: unknown) => {
     setNewMold((prev) => {
@@ -1399,6 +1497,29 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Modify request button */}
+            {!adminMode && (
+              <button
+                onClick={openModifyModal}
+                className="flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+                style={{ backgroundColor: '#4a7c59' }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                {t.modReqTitle}
+              </button>
+            )}
             {/* Add button */}
             <button
               onClick={() => setShowAddModal(true)}
@@ -1680,6 +1801,122 @@ export default function Home() {
         </div>
 
         {/* Add Mold Modal */}
+        {/* Modify request modal */}
+        {showModifyModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.35)' }}
+            onClick={() => setShowModifyModal(false)}
+          >
+            <div
+              className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+              style={{ maxHeight: '90vh', overflowY: 'auto' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
+                {t.modReqTitle}
+              </h3>
+              <p className="mt-1 text-xs" style={{ color: '#6b7c6b' }}>
+                {t.modReqDesc}
+              </p>
+              <div className="mt-5 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>
+                    {t.modTargetLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                  </label>
+                  <select
+                    value={modTargetMoldId}
+                    onChange={(e) => {
+                      setModTargetMoldId(e.target.value);
+                      setModError('');
+                    }}
+                    className="w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                  >
+                    <option value="">{t.modTargetPlaceholder}</option>
+                    {molds.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.code} · {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>
+                    {t.modTypeLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                  </label>
+                  <select
+                    value={modType}
+                    onChange={(e) => {
+                      setModType(e.target.value as 'dimensionRepair' | 'wearRepair' | 'other');
+                      setModError('');
+                    }}
+                    className="w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                  >
+                    <option value="dimensionRepair">{t.modTypeDimension}</option>
+                    <option value="wearRepair">{t.modTypeWear}</option>
+                    <option value="other">{t.modTypeOther}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>
+                    {t.modDescLabel}
+                    {modType === 'other' && <span style={{ color: '#e74c3c' }}> *</span>}
+                  </label>
+                  <textarea
+                    value={modDesc}
+                    onChange={(e) => {
+                      setModDesc(e.target.value);
+                      setModError('');
+                    }}
+                    rows={3}
+                    placeholder={modType === 'other' ? t.modDescRequired : t.modDescPlaceholder}
+                    className="w-full resize-none rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium" style={{ color: '#2d3b2d' }}>
+                    {t.reqApplicantLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={modApplicant}
+                    onChange={(e) => {
+                      setModApplicant(e.target.value);
+                      setModError('');
+                    }}
+                    placeholder={t.reqApplicantPlaceholder}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:ring-2"
+                    style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+                  />
+                </div>
+                {modError && (
+                  <p className="text-sm" style={{ color: '#e74c3c' }}>
+                    {modError}
+                  </p>
+                )}
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowModifyModal(false)}
+                  className="h-10 rounded-lg border px-5 text-sm font-medium transition-colors hover:opacity-80"
+                  style={{ borderColor: '#e0e8dc', color: '#6b7c6b' }}
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  onClick={submitModifyRequest}
+                  className="h-10 rounded-lg px-5 text-sm font-medium text-white transition-colors hover:opacity-90"
+                  style={{ backgroundColor: '#4a7c59' }}
+                >
+                  {t.reqSubmitModify}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {showAddModal && (
           <AddMoldModal
             newMold={newMold}
