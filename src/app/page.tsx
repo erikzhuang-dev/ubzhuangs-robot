@@ -964,7 +964,7 @@ export default function Home() {
       [L === 'zh' ? 'OEE原因' : 'OEE Reason']: m.oeeReason || '',
       [L === 'zh' ? '状态' : 'Status']: T[L][m.status],
       [L === 'zh' ? '数量(台)' : 'Quantity']: m.quantity,
-      [L === 'zh' ? '单价(万元)' : 'Unit Price(10k)']: Math.round(m.unitPrice / 100) / 100,
+      [L === 'zh' ? '单价(元)' : 'Unit Price(CNY)']: m.unitPrice,
       [L === 'zh' ? '合计金额' : 'Total Amount']: m.totalPrice,
       [L === 'zh' ? '损耗系数' : 'Loss Coeff.']: m.lossCoefficient,
       [L === 'zh' ? '损耗原因' : 'Loss Reason']: m.lossReason || '',
@@ -1633,12 +1633,12 @@ export default function Home() {
                           'in design': 'pending',
                           '设计中': 'pending',
                         };
-                        // 单价：优先读万元列（新格式），否则读元列（旧格式兼容）
+                        // 单价：优先读元列（新格式），否则读万元列（旧格式兼容）
+                        const unitPriceYuanStr = String(row['Unit Price(CNY)'] ?? row['Unit Price'] ?? row['单价(元)'] ?? row['单价'] ?? '').replace(/[¥,]/g, '');
                         const unitPriceWanStr = String(row['Unit Price(10k)'] ?? row['Unit Price (10k)'] ?? row['单价(万元)'] ?? '').replace(/[¥,]/g, '');
-                        const unitPriceYuanStr = String(row['Unit Price'] ?? row['单价'] ?? '0').replace(/[¥,]/g, '');
-                        const unitPriceStr = unitPriceWanStr !== ''
-                          ? String(Math.round(Number(unitPriceWanStr) * 10000 * 100) / 100)
-                          : unitPriceYuanStr;
+                        const unitPriceStr = unitPriceYuanStr !== ''
+                          ? unitPriceYuanStr
+                          : String(Math.round(Number(unitPriceWanStr) * 10000 * 100) / 100);
                         return {
                           id: code || `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                           code: String(code),
