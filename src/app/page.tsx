@@ -1607,6 +1607,7 @@ export default function Home() {
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.status}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.code}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.projectNumber}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.unitPrice}</th>
@@ -2325,6 +2326,9 @@ function MoldRow({
           {mold.code}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
+          {mold.projectNumber || '-'}
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
           {lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#2d3b2d' }}>
@@ -2347,7 +2351,7 @@ function MoldRow({
       {/* Expanded detail */}
       {isExpanded && (
         <tr>
-          <td colSpan={10} className="p-0">
+          <td colSpan={11} className="p-0">
             <div className="px-6 py-5" style={{ backgroundColor: '#f0f7ec' }}>
               {renderPendingBanner}
               <div className="grid grid-cols-2 gap-8">
@@ -3484,6 +3488,7 @@ function RequestBoard({
     colNo: zh ? '单号' : 'Req. No.',
     colType: zh ? '类型' : 'Type',
     colTarget: zh ? '目标' : 'Target',
+    colReason: zh ? '购买原因' : 'Purchase Reason',
     colApplicant: zh ? '申请人' : 'Applicant',
     colStatus: zh ? '状态' : 'Status',
     colTime: zh ? '提交时间' : 'Submitted',
@@ -3652,7 +3657,7 @@ function RequestBoard({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b" style={{ borderColor: '#e0e8dc', backgroundColor: '#f7faf5' }}>
-                {[L.colNo, L.colType, L.colTarget, L.colApplicant, L.colStatus, L.colTime, L.colActions].map((h, i) => (
+                {[L.colNo, L.colType, L.colTarget, L.colReason, L.colApplicant, L.colStatus, L.colTime, L.colActions].map((h, i) => (
                   <th key={i} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: '#6b7c6b' }}>
                     {h}
                   </th>
@@ -3668,6 +3673,12 @@ function RequestBoard({
                   <td className="px-4 py-3">{typeBadge(r.type)}</td>
                   <td className="max-w-[260px] truncate px-4 py-3" style={{ color: '#2d3b2d' }}>
                     {targetText(r)}
+                  </td>
+                  <td
+                    className="max-w-[280px] whitespace-normal break-words px-4 py-3 text-sm leading-snug"
+                    style={{ color: '#2d3b2d' }}
+                  >
+                    {r.reason || '-'}
                   </td>
                   <td className="px-4 py-3" style={{ color: '#2d3b2d' }}>
                     {r.applicant}
