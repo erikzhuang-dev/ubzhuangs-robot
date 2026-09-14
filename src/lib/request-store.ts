@@ -59,6 +59,16 @@ export function countByStatus(status: MoldRequestStatus): number {
 export type NewRequestInput = Omit<MoldRequest, 'id' | 'requestNo' | 'status' | 'appliedAt'>;
 
 export function addRequest(input: NewRequestInput): MoldRequest {
+  // 幂等防重：1.5 秒窗口内同类型 + 同模具 + 同原因 + 同申请人的提交视为重复（防双击）
+  const dup = loadAll().find(
+    (r) =>
+      r.type === input.type &&
+      r.reason === input.reason &&
+      r.applicant === input.applicant &&
+      r.moldId === input.moldId &&
+      Date.now() - new Date(r.appliedAt).getTime() < 1500
+  );
+  if (dup) return dup;
   const req: MoldRequest = {
     ...input,
     id: newRequestId(),

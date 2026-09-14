@@ -8,9 +8,9 @@ import {
   getRequestRetentionDays,
 } from '@/lib/config-store';
 import {
-  getRequests, addRequest, updateRequest, nextRequestNo, purgeRequestsByRetention,
+  getRequests, addRequest, updateRequest, nextRequestNo, purgeRequestsByRetention, hasPendingRequestForMold, getRequestById,
 } from '@/lib/request-store';
-import type { Mold, Product, MoldRequest, FieldChange } from '@/lib/types';
+import type { Mold, Product, MoldRequest, MoldRequestStatus, FieldChange } from '@/lib/types';
 import { translateMoldName } from '@/lib/translator';
 import * as XLSX from 'xlsx';
 import Analysis from '@/components/Analysis';
@@ -183,6 +183,8 @@ const T = {
     // ── Approval workflow ──
     adminPinError: '管理员口令错误',
     noChange: '没有检测到修改内容',
+    pendingDupBlocked: '该模具已有待审批的申请，请等待管理员处理后再发起新申请',
+    moldNameRequired: '请填写模具名称',
     draftBarTitle: (n: number) => `已暂存 ${n} 项修改（提交申请后生效）`,
     draftDiscard: '放弃修改',
     reqReasonLabel: '修改原因',
@@ -327,6 +329,8 @@ const T = {
     // ── Approval workflow ──
     adminPinError: 'Incorrect admin PIN',
     noChange: 'No modifications detected',
+    pendingDupBlocked: 'This mold already has a pending request. Please wait for it to be reviewed before submitting a new one.',
+    moldNameRequired: 'Mold name is required',
     draftBarTitle: (n: number) => `${n} change(s) staged (takes effect after request approval)`,
     draftDiscard: 'Discard',
     reqReasonLabel: 'Reason',
@@ -694,6 +698,11 @@ export default function Home() {
         setDraftError(t.reqApplicantRequired);
         return;
       }
+      // 互斥拦截：该模具已有待审批申请时，禁止叠加新的修改申请（避免多个申请基于过期值互相覆盖）
+      if (hasPendingRequestForMold(mold.id)) {
+        setDraftError(t.pendingDupBlocked);
+        return;
+      }
       const changes: FieldChange[] = Object.entries(draft).map(([field, value]) => ({
         field,
         label: FIELD_LABELS[field]?.zh ?? field,
@@ -828,7 +837,8 @@ export default function Home() {
   // ── Approval actions ──
   const approveRequest = useCallback(
     (id: string, comment?: string) => {
-      const req = requests.find((r) => r.id === id);
+      // 以存储层最新状态为准，防止过期闭包导致重复审批/重复创建
+      const req = getRequestById(id);
       if (!req || req.status !== 'pending') return;
       if (req.type === 'modify' && req.moldId) {
         const patch: Record<string, unknown> = { lastRequestNo: req.requestNo };
@@ -842,16 +852,19 @@ export default function Home() {
         );
       }
       if (req.type === 'purchase' && req.newMold) {
-        const newId = `mold_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        const code = `M${String(molds.length + 1).padStart(4, '0')}`;
-        const newMold: Mold = recalcDerived({
-          ...(req.newMold as Mold),
-          id: newId,
-          code,
-          status: 'pending',
-          lastRequestNo: req.requestNo,
+        setMolds((prev) => {
+          // 编号在函数式更新内生成，避免连续批准两个购买单时编号重复
+          const newId = `mold_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+          const code = `M${String(prev.length + 1).padStart(4, '0')}`;
+          const newMold: Mold = recalcDerived({
+            ...(req.newMold as Mold),
+            id: newId,
+            code,
+            status: 'pending',
+            lastRequestNo: req.requestNo,
+          });
+          return [...prev, newMold];
         });
-        setMolds((prev) => [...prev, newMold]);
       }
       updateRequest(id, {
         status: 'approved',
@@ -864,11 +877,13 @@ export default function Home() {
       setTimeout(() => setShowRequestToast(false), 4000);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [requests, molds, recalcDerived]
+    [recalcDerived]
   );
 
   const rejectRequest = useCallback(
     (id: string, comment: string) => {
+      // 仅待审批状态可驳回，防止状态机被破坏
+      if (getRequestById(id)?.status !== 'pending') return;
       updateRequest(id, {
         status: 'rejected',
         reviewer: 'admin',
@@ -877,11 +892,13 @@ export default function Home() {
       });
       setRequests(getRequests());
     },
-    [requests]
+    []
   );
 
   const withdrawRequest = useCallback(
     (id: string) => {
+      // 仅待审批状态可撤回
+      if (getRequestById(id)?.status !== 'pending') return;
       updateRequest(id, { status: 'cancelled', reviewedAt: new Date().toISOString() });
       setRequests(getRequests());
     },
@@ -890,8 +907,9 @@ export default function Home() {
 
   const resubmitRequest = useCallback(
     (id: string) => {
-      const src = requests.find((r) => r.id === id);
-      if (!src) return;
+      // 以存储层最新状态为准；仅已驳回的单可重新提交，防止重复申请
+      const src = getRequestById(id);
+      if (!src || src.status !== 'rejected') return;
       addRequest({
         type: src.type,
         moldId: src.moldId,
@@ -904,7 +922,7 @@ export default function Home() {
       });
       setRequests(getRequests());
     },
-    [requests]
+    []
   );
 
   // 申请人查看审批结果 → 标记已读（清除 Tab 黄点）
@@ -995,6 +1013,10 @@ export default function Home() {
 
   // Add new mold (admin direct) / submit purchase request (standard mode)
   const handleAddMold = useCallback(() => {
+    if (!String(newMold.name || '').trim()) {
+      setPurchaseError(T[lang].moldNameRequired);
+      return;
+    }
     // Standard mode: convert to purchase request, do not write to registry directly
     if (!adminMode) {
       if (!purchaseReason.trim()) {
@@ -1104,6 +1126,11 @@ export default function Home() {
     }
     if (!modApplicant.trim()) {
       setModError(T[lang].reqApplicantRequired);
+      return;
+    }
+    // 互斥拦截：该模具已有待审批申请时，禁止叠加新的修改申请
+    if (hasPendingRequestForMold(modTargetMoldId)) {
+      setModError(T[lang].pendingDupBlocked);
       return;
     }
     const typeLabels: Record<string, { zh: string; en: string }> = {
