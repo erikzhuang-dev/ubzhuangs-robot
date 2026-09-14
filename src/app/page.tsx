@@ -184,6 +184,9 @@ const T = {
     draftBarTitle: (n: number) => `已暂存 ${n} 项修改（提交申请后生效）`,
     draftDiscard: '放弃修改',
     reqReasonLabel: '修改原因',
+    reqReasonLabelP: '购买原因',
+    reqReasonPlaceholderP: '请填写购买原因（必填）',
+    reqReasonRequiredP: '请填写购买原因',
     reqReasonPlaceholder: '请填写修改原因（必填）',
     reqReasonRequired: '请填写修改原因',
     reqApplicantLabel: '申请人',
@@ -312,6 +315,9 @@ const T = {
     draftBarTitle: (n: number) => `${n} change(s) staged (takes effect after request approval)`,
     draftDiscard: 'Discard',
     reqReasonLabel: 'Reason',
+    reqReasonLabelP: 'Purchase Reason',
+    reqReasonPlaceholderP: 'Please enter the purchase reason (required)',
+    reqReasonRequiredP: 'Purchase reason is required',
     reqReasonPlaceholder: 'Reason for change (required)',
     reqReasonRequired: 'Reason for change is required',
     reqApplicantLabel: 'Applicant',
@@ -949,7 +955,7 @@ export default function Home() {
     // Standard mode: convert to purchase request, do not write to registry directly
     if (!adminMode) {
       if (!purchaseReason.trim()) {
-        setPurchaseError(T[lang].reqReasonRequired);
+        setPurchaseError(T[lang].reqReasonRequiredP);
         return;
       }
       if (!purchaseApplicant.trim()) {
@@ -1697,12 +1703,12 @@ export default function Home() {
                   <div className="space-y-3">
                     <div>
                       <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
-                        {t.reqReasonLabel} <span style={{ color: '#e74c3c' }}>*</span>
+                        {t.reqReasonLabelP} <span style={{ color: '#e74c3c' }}>*</span>
                       </label>
                       <textarea
                         value={purchaseReason}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPurchaseReason(e.target.value)}
-                        placeholder={t.reqReasonPlaceholder}
+                        placeholder={t.reqReasonPlaceholderP}
                         rows={2}
                         className="w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#4a7c59]"
                         style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}

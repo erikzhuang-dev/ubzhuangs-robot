@@ -116,7 +116,7 @@ export function getMonthlyWorkDays(): number {
 export function setMonthlyWorkDays(v: number) { save(KEYS.monthlyWorkDays, v); }
 
 // ── Approval / admin mode settings ──
-export const DEFAULT_ADMIN_PIN = 'admin123';
+export const DEFAULT_ADMIN_PIN = 'admin';
 
 export function getAdminPin(): string {
   const v = load<string>(KEYS.adminPin, DEFAULT_ADMIN_PIN);
