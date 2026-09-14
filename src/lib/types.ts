@@ -83,6 +83,7 @@ export interface MoldRequest {
   reviewedAt?: string; // 审批时间
   reviewComment?: string; // 审批意见（驳回时必填）
   resubmitOf?: string; // 重新提交时指向原单 id（追溯链）
+  applicantRead?: boolean; // 申请人是否已查看审批结果（用于"已通过/已驳回"Tab 未读黄点）
 }
 
 export interface Product {

@@ -903,6 +903,12 @@ export default function Home() {
     [requests]
   );
 
+  // 申请人查看审批结果 → 标记已读（清除 Tab 黄点）
+  const markRequestRead = useCallback((id: string) => {
+    updateRequest(id, { applicantRead: true });
+    setRequests(getRequests());
+  }, []);
+
   // ── Admin mode switching ──
   const toggleAdminMode = useCallback(() => {
     if (adminMode) {
@@ -1287,6 +1293,7 @@ export default function Home() {
             onReject={rejectRequest}
             onWithdraw={withdrawRequest}
             onResubmit={resubmitRequest}
+            onMarkRead={markRequestRead}
           />
         </div>
       </div>
@@ -3690,6 +3697,7 @@ function RequestBoard({
   onReject,
   onWithdraw,
   onResubmit,
+  onMarkRead,
 }: {
   lang: Lang;
   adminMode: boolean;
@@ -3698,6 +3706,7 @@ function RequestBoard({
   onReject: (id: string, comment: string) => void;
   onWithdraw: (id: string) => void;
   onResubmit: (id: string) => void;
+  onMarkRead?: (id: string) => void;
 }) {
   const zh = lang === 'zh';
   const [statusTab, setStatusTab] = useState<'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'>('pending');
@@ -3824,6 +3833,10 @@ function RequestBoard({
 
   const pendingCountAll = requests.filter((r) => r.status === 'pending').length;
 
+  // 普通模式：已通过/已驳回 Tab 的未读黄点（申请人尚未查看审批结果）
+  const hasUnreadResult = (key: 'approved' | 'rejected') =>
+    !adminMode && requests.some((r) => r.status === key && !r.applicantRead);
+
   const tabDefs: { key: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'all'; label: string }[] = [
     { key: 'pending', label: L.pending },
     { key: 'approved', label: L.approved },
@@ -3860,7 +3873,16 @@ function RequestBoard({
               className="relative px-4 py-2 text-sm font-medium transition-colors"
               style={statusTab === tb.key ? { backgroundColor: '#e8f5e9', color: '#4a7c59' } : { color: '#6b7c6b' }}
             >
-              {tb.label}
+              <span className="relative inline-block">
+                {tb.label}
+                {(tb.key === 'approved' || tb.key === 'rejected') && hasUnreadResult(tb.key) && (
+                  <span
+                    className="absolute -right-2.5 -top-0.5 h-2 w-2 rounded-full"
+                    style={{ backgroundColor: '#f5b301' }}
+                    title={zh ? '有新的审批结果' : 'New review results'}
+                  />
+                )}
+              </span>
               {tb.key === 'pending' && pendingCountAll > 0 && (
                 <span
                   className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
@@ -3933,6 +3955,7 @@ function RequestBoard({
                           setDetailId(r.id);
                           setComment('');
                           setCommentError('');
+                          if (!adminMode && onMarkRead && !r.applicantRead) onMarkRead(r.id);
                         }}
                       >
                         {L.view}
