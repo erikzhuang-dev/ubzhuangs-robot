@@ -436,6 +436,19 @@ const RUNNER_NAME_MAP: Record<string, { zh: string; en: string }> = {
   '针阀式热流道': { zh: '针阀式热流道', en: 'Valve Hot Runner' },
 };
 
+// 将历史数据中的英文枚举/英文文本归一化为标准中文键（热流道/冷流道等）
+function normalizeRunner(v?: string): string {
+  const raw = (v || '').trim();
+  if (!raw) return '';
+  if (RUNNER_NAME_MAP[raw]) return raw;
+  const low = raw.toLowerCase();
+  if (low.includes('semi') || raw.includes('半')) return '半热流道';
+  if (low.includes('valve') || raw.includes('针阀')) return '针阀式热流道';
+  if (low.includes('cold')) return '冷流道';
+  if (low.includes('hot')) return '热流道';
+  return raw;
+}
+
 export default function Home() {
   // Initialize molds from INITIAL_MOLDS (localStorage loaded in useEffect to avoid hydration mismatch)
   const [molds, setMolds] = useState<Mold[]>(INITIAL_MOLDS);
@@ -1002,7 +1015,7 @@ export default function Home() {
         return L === 'zh' ? (m.productName || '') : (m.productNameEn || m.productName || '');
       })(),
       [L === 'zh' ? '腔数' : 'Cavities']: m.cavities,
-      [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_NAME_MAP[m.runnerType]?.[L] || m.runnerType,
+      [L === 'zh' ? '流道类型' : 'Runner Type']: RUNNER_NAME_MAP[normalizeRunner(m.runnerType)]?.[L] || normalizeRunner(m.runnerType),
       [L === 'zh' ? '注塑周期(秒)' : 'Cycle Time(s)']: m.cycleTime,
       [L === 'zh' ? '每小时产能' : 'Hourly Output']: m.hourlyCapacity,
       [L === 'zh' ? '理论每小时产能' : 'Theoretical Hourly Output']: m.theoreticalHourlyCapacity ?? 0,
@@ -1708,7 +1721,7 @@ export default function Home() {
                           productNameEn: product?.nameEn || String(row['Product'] || row['产品'] || row['所属产品'] || ''),
                           factory: String(row['Factory'] || row['工厂'] || ''),
                           cavities: Number(row['Cavities'] || row['腔数'] || 1),
-                          runnerType: String(row['Runner Type'] || row['流道类型'] || 'cold'),
+                          runnerType: normalizeRunner(String(row['Runner Type'] || row['流道类型'] || '')),
                           cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期(秒)'] || row['注塑周期(s)'] || row['注塑周期'] || 30),
                           hourlyCapacity: Number(row['Hourly Output'] || row['每小时产能'] || 0),
                           oee: Number(row['OEE'] || 0.9),
@@ -2645,7 +2658,7 @@ function MoldRow({
           {mold.projectNumber || '-'}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
-          {(RUNNER_NAME_MAP[mold.runnerType] && RUNNER_NAME_MAP[mold.runnerType][lang]) || mold.runnerType || '-'}
+          {(RUNNER_NAME_MAP[normalizeRunner(mold.runnerType)] && RUNNER_NAME_MAP[normalizeRunner(mold.runnerType)][lang]) || mold.runnerType || '-'}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
           {lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
@@ -2965,7 +2978,7 @@ function MoldRow({
                       </DetailField>
                       <DetailField label={t.runnerType}>
                         <select
-                          value={mold.runnerType}
+                          value={normalizeRunner(mold.runnerType)}
                           onChange={(e) => onUpdate(mold.id, 'runnerType', e.target.value)}
                           className="detail-input"
                         >
