@@ -882,7 +882,18 @@ export default function Home() {
       // 以存储层最新状态为准，防止过期闭包导致重复审批/重复创建
       const req = getRequestById(id);
       if (!req || req.status !== 'pending') return;
-      if (req.type === 'modify' && req.moldId) {
+      if (req.type === 'modify') {
+        // 目标模具已不存在（如台账被导入重建）时自动驳回，避免静默通过导致修改丢失
+        if (!molds.some((m) => m.id === req.moldId)) {
+          updateRequest(id, {
+            status: 'rejected',
+            reviewer: 'admin',
+            reviewedAt: new Date().toISOString(),
+            reviewComment: lang === 'zh' ? '目标模具已不存在（台账数据已变更），申请自动驳回' : 'Auto-rejected: target mold no longer exists',
+          });
+          setRequests(getRequests());
+          return;
+        }
         const patch: Record<string, unknown> = { lastRequestNo: req.requestNo };
         (req.changes || [])
           .filter((c) => c.field in FIELD_LABELS)
@@ -897,7 +908,11 @@ export default function Home() {
         setMolds((prev) => {
           // 编号在函数式更新内生成，避免连续批准两个购买单时编号重复
           const newId = `mold_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-          const code = `M${String(prev.length + 1).padStart(4, '0')}`;
+          // 顺序取号后若与现存编号冲突（导入/删除后 length 与序号脱钩），递增跳过
+          let code = `M${String(prev.length + 1).padStart(4, '0')}`;
+          while (prev.some((m) => m.code === code)) {
+            code = `M${String(Number(code.slice(1)) + 1).padStart(4, '0')}`;
+          }
           const newMold: Mold = recalcDerived({
             ...(req.newMold as Mold),
             id: newId,
@@ -919,7 +934,7 @@ export default function Home() {
       setTimeout(() => setShowRequestToast(false), 4000);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [recalcDerived]
+    [recalcDerived, molds, lang]
   );
 
   const rejectRequest = useCallback(
@@ -1671,6 +1686,15 @@ export default function Home() {
                       const worksheet = workbook.Sheets[sheetName];
                       const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
 
+                      // 数值容错：非数字文本（如 'N/A'、'1.2套'）回退默认值，避免 NaN 入库并传染派生字段
+                      const toNum = (v: unknown, fallback: number): number => {
+                        if (v === undefined || v === null) return fallback;
+                        const n = Number(String(v).trim().replace(/[¥,]/g, ''));
+                        return Number.isFinite(n) ? n : fallback;
+                      };
+                      const seenCodes = new Map<string, number>();
+                      const dupCodes: string[] = [];
+
                       const importedMolds: Mold[] = jsonData.map((row, index) => {
                         const buValue = String(row['Business Unit'] || row['所属BU'] || row['BU'] || '');
                         let bu = BUS.find((b) => b.name === buValue || b.nameEn === buValue);
@@ -1709,7 +1733,17 @@ export default function Home() {
                           ? unitPriceYuanStr
                           : String(Math.round(Number(unitPriceWanStr) * 10000 * 100) / 100);
                         return {
-                          id: code || `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                          // 模具编号重复时 id 加序号后缀，避免重复 id 破坏 React key 与草稿合并
+                          id: (() => {
+                            const seq = seenCodes.get(code) || 0;
+                            seenCodes.set(code, seq + 1);
+                            if (code && seq > 0 && !dupCodes.includes(code)) dupCodes.push(code);
+                            return code
+                              ? seq === 0
+                                ? code
+                                : `${code}_${seq}`
+                              : `imported_${index}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                          })(),
                           code: String(code),
                           name: String(row['Mold Name'] || row['模具名称'] || ''),
                           nameEn: String(row['Mold Name EN'] || row['Mold Name (EN)'] || row['模具英文名'] || row['英文名'] || '') || translateMoldName(String(row['Mold Name'] || row['模具名称'] || '')),
@@ -1720,29 +1754,34 @@ export default function Home() {
                           productName: product?.name || String(row['Product'] || row['产品'] || row['所属产品'] || ''),
                           productNameEn: product?.nameEn || String(row['Product'] || row['产品'] || row['所属产品'] || ''),
                           factory: String(row['Factory'] || row['工厂'] || ''),
-                          cavities: Number(row['Cavities'] || row['腔数'] || 1),
+                          cavities: Math.max(0, Math.round(toNum(row['Cavities'] ?? row['腔数'], 1))),
                           runnerType: normalizeRunner(String(row['Runner Type'] || row['流道类型'] || '')),
-                          cycleTime: Number(row['Cycle Time(s)'] || row['注塑周期(秒)'] || row['注塑周期(s)'] || row['注塑周期'] || 30),
-                          hourlyCapacity: Number(row['Hourly Output'] || row['每小时产能'] || 0),
-                          oee: Number(row['OEE'] || 0.9),
+                          cycleTime: Math.max(0, toNum(row['Cycle Time(s)'] ?? row['注塑周期(秒)'] ?? row['注塑周期(s)'] ?? row['注塑周期'], 30)),
+                          hourlyCapacity: toNum(row['Hourly Output'] ?? row['每小时产能'], 0),
+                          oee: (() => {
+                            // 兼容百分比写法：>1 且 <=100 视为百分数自动除以 100，其余截断到 [0,1]
+                            const raw = toNum(row['OEE'], 0.9);
+                            const pct = raw > 1 && raw <= 100 ? raw / 100 : raw;
+                            return Math.min(1, Math.max(0, pct));
+                          })(),
                           oeeReason: String(row['OEE Reason'] || row['OEE原因'] || ''),
                           oeeReasonEn: String(row['OEE Reason'] || row['OEE原因'] || ''),
-                          quantity: Number(row['Quantity'] || row['数量(台)'] || row['数量'] || 0),
-                          unitPrice: Number(unitPriceStr) || 0,
-                          totalPrice: Number(row['Quantity'] || row['数量(台)'] || row['数量'] || 0) * (Number(unitPriceStr) || 0),
-                          lossCoefficient: Number(row['Loss Coeff.'] ?? row['损耗系数'] ?? row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'] ?? 0.05),
+                          quantity: toNum(row['Quantity'] ?? row['数量(台)'] ?? row['数量'], 0),
+                          unitPrice: toNum(unitPriceStr, 0),
+                          totalPrice: toNum(row['Quantity'] ?? row['数量(台)'] ?? row['数量'], 0) * toNum(unitPriceStr, 0),
+                          lossCoefficient: Math.min(1, Math.max(0, toNum(row['Loss Coeff.'] ?? row['损耗系数'] ?? row['Mold Loss Coeff.'] ?? row['模具损耗系数'] ?? row['Loss Coefficient'], 0.05))),
                           lossReason: String(row['Loss Reason'] || row['损耗原因'] || ''),
                           lossReasonEn: String(row['Loss Reason'] || row['损耗原因'] || ''),
                           material: String(row['Linked Material'] ?? row['Material'] ?? row['关联材料'] ?? row['产品材料'] ?? row['材料'] ?? '').trim(),
-                          materialLossCoeff: Number(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'] ?? 0),
-                          productWeight: Number(row['Product Weight(g)'] || row['单只克重(g)'] || row['产品单只克重'] || row['产品克重'] || 0),
-                          scrapWeight: Number(row['Scrap Weight(g)'] || row['废料克重'] || 0),
-                          wasteWeight: Number(row['Waste Weight(g)'] || row['废料克重'] || 0),
-                          sprueWeight: Number(row['Sprue Weight(g)'] || row['水口料重量(g)'] || row['水口料重量'] || 0),
-                          monthlyCapacity: Number(row['Monthly Capacity(10k)'] || row['月产能(万)'] || row['月产能'] || 0),
-                          moldLength: Number(row['Mold Length(mm)'] || row['模具长(mm)'] || row['模具长度'] || 0),
-                          moldWidth: Number(row['Mold Width(mm)'] || row['模具宽(mm)'] || row['模具宽度'] || 0),
-                          moldThickness: Number(row['Mold Thickness(mm)'] || row['模具厚(mm)'] || row['模具厚度'] || 0),
+                          materialLossCoeff: toNum(row['Material Loss Coeff.'] ?? row['材料损耗系数'] ?? row['Material Loss Coefficient'], 0),
+                          productWeight: toNum(row['Product Weight(g)'] ?? row['单只克重(g)'] ?? row['产品单只克重'] ?? row['产品克重'], 0),
+                          scrapWeight: toNum(row['Scrap Weight(g)'] ?? row['废料克重'], 0),
+                          wasteWeight: toNum(row['Waste Weight(g)'] ?? row['废料克重'], 0),
+                          sprueWeight: toNum(row['Sprue Weight(g)'] ?? row['水口料重量(g)'] ?? row['水口料重量'], 0),
+                          monthlyCapacity: toNum(row['Monthly Capacity(10k)'] ?? row['月产能(万)'] ?? row['月产能'], 0),
+                          moldLength: toNum(row['Mold Length(mm)'] ?? row['模具长(mm)'] ?? row['模具长度'], 0),
+                          moldWidth: toNum(row['Mold Width(mm)'] ?? row['模具宽(mm)'] ?? row['模具宽度'], 0),
+                          moldThickness: toNum(row['Mold Thickness(mm)'] ?? row['模具厚(mm)'] ?? row['模具厚度'], 0),
                           location: String(row['Location'] || row['所在地'] || ''),
                           moldType: (() => {
                             const mt = String(row['Mold Type'] || row['模具类型'] || '');
@@ -1759,22 +1798,47 @@ export default function Home() {
                             const match = getAssetOwnerships().find((a) => a.cn === raw || a.en === raw);
                             return match ? match.en : raw;
                           })(),
-                          theoreticalHourlyCapacity: Number(row['Theoretical Hourly Output'] || row['理论每小时产能'] || 0),
-                          actualHourlyCapacity: Number(row['Actual Hourly Output'] || row['实际每小时产能'] || 0),
-                          theoreticalMonthlyCapacity: Number(row['Theoretical Monthly Capacity(10k)'] || row['理论月产能(万)'] || row['理论月产能'] || 0),
-                          actualMonthlyCapacity: Number(row['Actual Monthly Capacity(10k)'] || row['实际月产能(万)'] || row['实际月产能'] || 0),
+                          theoreticalHourlyCapacity: toNum(row['Theoretical Hourly Output'] ?? row['理论每小时产能'], 0),
+                          actualHourlyCapacity: toNum(row['Actual Hourly Output'] ?? row['实际每小时产能'], 0),
+                          theoreticalMonthlyCapacity: toNum(row['Theoretical Monthly Capacity(10k)'] ?? row['理论月产能(万)'] ?? row['理论月产能'], 0),
+                          actualMonthlyCapacity: toNum(row['Actual Monthly Capacity(10k)'] ?? row['实际月产能(万)'] ?? row['实际月产能'], 0),
                           commissionDate: String(row['Activation Date'] || row['启用时间'] || ''),
-                          depreciationYears: Number(row['Lifetime'] || row['寿命'] || row['Depreciation Years'] || row['折旧年数'] || 0),
+                          depreciationYears: Math.max(0, Math.round(toNum(row['Lifetime'] ?? row['寿命'] ?? row['Depreciation Years'] ?? row['折旧年数'], 0))),
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
                           internalNumber: String(row['Internal Number'] || row['内部编号'] || ''),
                           drawingNumber: String(row['Drawing Number'] || row['图纸编号'] || ''),
-                          moldWeight: Number(row['Mold Weight(kg)'] || row['模具重量(kg)'] || row['模具重量'] || 0),
+                          moldWeight: toNum(row['Mold Weight(kg)'] ?? row['模具重量(kg)'] ?? row['模具重量'], 0),
                         };
                       });
 
                       setMolds(importedMolds);
-                      alert(lang === 'zh' ? `成功导入 ${importedMolds.length} 条模具数据` : `Successfully imported ${importedMolds.length} molds`);
+                      // 台账基线被导入重建：作废所有待审批申请（其目标模具可能已消失），并清空未提交草稿，防止审批通过后修改静默丢失
+                      let cancelledCount = 0;
+                      getRequests()
+                        .filter((r) => r.status === 'pending')
+                        .forEach((r) => {
+                          updateRequest(r.id, {
+                            status: 'cancelled',
+                            reviewedAt: new Date().toISOString(),
+                            reviewComment: lang === 'zh' ? 'Excel 导入覆盖台账，原申请自动作废' : 'Auto-cancelled: registry overwritten by Excel import',
+                          });
+                          cancelledCount++;
+                        });
+                      if (cancelledCount > 0) setRequests(getRequests());
+                      setDraftEdits({});
+                      setExpandedRow(null);
+                      const dupTip = dupCodes.length
+                        ? lang === 'zh'
+                          ? `；重复编号已自动重命名：${dupCodes.slice(0, 5).join('、')}${dupCodes.length > 5 ? ' 等' : ''}`
+                          : `; duplicated codes renamed: ${dupCodes.slice(0, 5).join(', ')}${dupCodes.length > 5 ? ' etc.' : ''}`
+                        : '';
+                      const cancelTip = cancelledCount > 0
+                        ? lang === 'zh'
+                          ? `；${cancelledCount} 条待审批申请已自动作废`
+                          : `; ${cancelledCount} pending request(s) auto-cancelled`
+                        : '';
+                      alert(lang === 'zh' ? `成功导入 ${importedMolds.length} 条模具数据${dupTip}${cancelTip}` : `Successfully imported ${importedMolds.length} molds${dupTip}${cancelTip}`);
                     } catch (err) {
                       alert(lang === 'zh' ? '导入失败，请检查文件格式' : 'Import failed, please check the file format');
                     }
