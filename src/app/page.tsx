@@ -589,13 +589,19 @@ export default function Home() {
       if (factoryFilter && m.factory !== factoryFilter) return false;
       if (searchText) {
         const s = searchText.toLowerCase();
+        // 模具类型检索文本：试验模/量产模（中英文均支持）
+        const typeText =
+          m.moldType === 'trial'
+            ? '试验模 试作模 试验 trial mold trialmold'
+            : '量产模 量产 量产模 production mass production massproduction mold';
         return (
           m.name.toLowerCase().includes(s) ||
           (m.nameEn || '').toLowerCase().includes(s) ||
           m.supplier.toLowerCase().includes(s) ||
           (m.supplierEn || '').toLowerCase().includes(s) ||
           m.code.toLowerCase().includes(s) ||
-          (m.projectNumber || '').toLowerCase().includes(s)
+          (m.projectNumber || '').toLowerCase().includes(s) ||
+          typeText.includes(s)
         );
       }
       return true;
@@ -1801,6 +1807,7 @@ export default function Home() {
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.code}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.projectNumber}</th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.runnerType}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.unitPrice}</th>
@@ -2636,6 +2643,9 @@ function MoldRow({
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
           {mold.projectNumber || '-'}
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
+          {(RUNNER_NAME_MAP[mold.runnerType] && RUNNER_NAME_MAP[mold.runnerType][lang]) || mold.runnerType || '-'}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
           {lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
