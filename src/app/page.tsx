@@ -483,6 +483,7 @@ export default function Home() {
   const [requests, setRequests] = useState<MoldRequest[]>([]);
   // Detail-page draft edits (normal mode: edits are staged, not applied to registry)
   const [draftEdits, setDraftEdits] = useState<Record<string, Record<string, unknown>>>({});
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftExpanded, setDraftExpanded] = useState(false);
   const [draftReason, setDraftReason] = useState('');
   const [draftApplicant, setDraftApplicant] = useState('');
@@ -529,6 +530,22 @@ export default function Home() {
     setRequests(getRequests());
     setDraftApplicant(getLastApplicant());
     setNotifyPending(getPendingNotify());
+    // Restore staged draft edits (survive page refresh, still need approval to apply)
+    try {
+      const savedDrafts = localStorage.getItem('mold_draft_edits');
+      if (savedDrafts) {
+        const parsedDrafts = JSON.parse(savedDrafts) as Record<string, Record<string, unknown>>;
+        // Drop drafts whose mold no longer exists
+        const validIds = new Set((JSON.parse(localStorage.getItem('molds') || '[]') as Mold[]).map((m) => m.id));
+        const cleaned: Record<string, Record<string, unknown>> = {};
+        Object.entries(parsedDrafts).forEach(([mid, patch]) => {
+          if (validIds.has(mid) && patch && Object.keys(patch).length > 0) cleaned[mid] = patch;
+        });
+        setDraftEdits(cleaned);
+      }
+    } catch {
+      // Ignore parse errors
+    }
     // Load configurable lists
     setFactories(getFactories());
     setProducts(getProducts());
@@ -545,6 +562,12 @@ export default function Home() {
     if (!moldsLoaded) return;
     localStorage.setItem('molds', JSON.stringify(molds));
   }, [molds, moldsLoaded]);
+
+  // Persist staged draft edits so they survive page refresh
+  useEffect(() => {
+    if (!draftLoaded) return;
+    localStorage.setItem('mold_draft_edits', JSON.stringify(draftEdits));
+  }, [draftEdits, draftLoaded]);
 
   const t = T[lang];
 
