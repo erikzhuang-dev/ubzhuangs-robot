@@ -68,6 +68,8 @@ const T = {
     pageSubtitle: '模具台账、资产归属、生命周期、状态、维护与工装记录',
     searchPlaceholder: '搜索模具名称/供应商/编号/项目号...',
     allFactories: '全部工厂',
+    allRunners: '全部流道',
+    allMoldTypes: '全部类型',
     totalRecords: (n: number) => `共 ${n} 条`,
     exportExcel: '导出Excel',
     addMold: '添加',
@@ -223,6 +225,8 @@ const T = {
     pageSubtitle: 'Mold registry, ownership, lifecycle, condition, maintenance, and tooling records',
     searchPlaceholder: 'Search name / supplier / code / project no...',
     allFactories: 'All Factories',
+    allRunners: 'All Runners',
+    allMoldTypes: 'All Types',
     totalRecords: (n: number) => `${n} records`,
     exportExcel: 'Export Excel',
     addMold: 'Add',
@@ -455,6 +459,8 @@ export default function Home() {
   const [selectedBU, setSelectedBU] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [factoryFilter, setFactoryFilter] = useState<string>('');
+  const [runnerFilter, setRunnerFilter] = useState<string>('');
+  const [moldTypeFilter, setMoldTypeFilter] = useState<string>('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>('en');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -600,6 +606,10 @@ export default function Home() {
     return displayMolds.filter((m) => {
       if (selectedBU && m.buId !== selectedBU) return false;
       if (factoryFilter && m.factory !== factoryFilter) return false;
+      // 流道筛选：按归一化后的标准流道键匹配（兼容历史英文值）
+      if (runnerFilter && normalizeRunner(m.runnerType) !== runnerFilter) return false;
+      // 模具类型筛选：量产模 / 试验模
+      if (moldTypeFilter && m.moldType !== moldTypeFilter) return false;
       if (searchText) {
         const s = searchText.toLowerCase();
         // 模具类型检索文本：试验模/量产模（中英文均支持）
@@ -619,7 +629,7 @@ export default function Home() {
       }
       return true;
     });
-  }, [displayMolds, selectedBU, factoryFilter, searchText]);
+  }, [displayMolds, selectedBU, factoryFilter, runnerFilter, moldTypeFilter, searchText]);
 
   // BU stats
   const buStats = useMemo(() => {
@@ -1616,6 +1626,31 @@ export default function Home() {
                   {f}
                 </option>
               ))}
+            </select>
+            {/* Runner type filter */}
+            <select
+              value={runnerFilter}
+              onChange={(e) => setRunnerFilter(e.target.value)}
+              className="h-9 rounded-lg border px-3 text-sm outline-none"
+              style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+            >
+              <option value="">{t.allRunners}</option>
+              {Object.keys(RUNNER_NAME_MAP).map((r) => (
+                <option key={r} value={r}>
+                  {RUNNER_NAME_MAP[r][lang]}
+                </option>
+              ))}
+            </select>
+            {/* Mold type filter (mass / trial) */}
+            <select
+              value={moldTypeFilter}
+              onChange={(e) => setMoldTypeFilter(e.target.value)}
+              className="h-9 rounded-lg border px-3 text-sm outline-none"
+              style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
+            >
+              <option value="">{t.allMoldTypes}</option>
+              <option value="mass">{t.massProduction}</option>
+              <option value="trial">{t.trialMold}</option>
             </select>
             {/* Record count */}
             <span className="text-sm whitespace-nowrap" style={{ color: '#6b7c6b' }}>
