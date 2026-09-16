@@ -436,20 +436,26 @@ const STATUS_CHART_COLOR: Record<Mold['status'], string> = {
 const RUNNER_NAME_MAP: Record<string, { zh: string; en: string }> = {
   '热流道': { zh: '热流道', en: 'Hot Runner' },
   '冷流道': { zh: '冷流道', en: 'Cold Runner' },
-  '半热流道': { zh: '半热流道', en: 'Semi-Hot Runner' },
-  '针阀式热流道': { zh: '针阀式热流道', en: 'Valve Hot Runner' },
 };
 
-// 将历史数据中的英文枚举/英文文本归一化为标准中文键（热流道/冷流道等）
+// 将历史数据中的英文枚举/英文文本归一化为标准中文键（热流道/冷流道）
+// 半热流道、针阀式热流道已并入热流道大类
 function normalizeRunner(v?: string): string {
   const raw = (v || '').trim();
   if (!raw) return '';
   if (RUNNER_NAME_MAP[raw]) return raw;
   const low = raw.toLowerCase();
-  if (low.includes('semi') || raw.includes('半')) return '半热流道';
-  if (low.includes('valve') || raw.includes('针阀')) return '针阀式热流道';
   if (low.includes('cold')) return '冷流道';
-  if (low.includes('hot')) return '热流道';
+  if (
+    low.includes('hot') ||
+    low.includes('semi') ||
+    low.includes('valve') ||
+    raw.includes('热') ||
+    raw.includes('半') ||
+    raw.includes('针阀')
+  ) {
+    return '热流道';
+  }
   return raw;
 }
 
@@ -568,7 +574,8 @@ export default function Home() {
     // Load configurable lists
     setFactories(getFactories());
     setProducts(getProducts());
-    setRunnerTypes(getRunnerTypes());
+    // 流道类型只保留热流道/冷流道，过滤 localStorage 旧配置中的半热流道、针阀式热流道
+    setRunnerTypes(getRunnerTypes().filter((r) => r === '热流道' || r === '冷流道'));
     setMaterials(getMaterials());
     setLocations(getLocations());
     setSuppliers(getSuppliers());

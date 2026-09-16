@@ -5,7 +5,7 @@ import { BUS, PRODUCTS as DEFAULT_PRODUCTS } from './mock-data';
 
 // ── Defaults ──
 export const DEFAULT_FACTORIES = ['LD', 'PMM', 'Winner', 'KDL', 'ZJKDL'];
-export const DEFAULT_RUNNER_TYPES = ['热流道', '冷流道', '半热流道', '针阀式热流道'];
+export const DEFAULT_RUNNER_TYPES = ['热流道', '冷流道'];
 export const DEFAULT_MATERIALS = ['PP', 'PE', 'PC', 'ABS', 'PS', 'PVC', 'PMMA', 'POM', 'PA66', 'PBT'];
 export const DEFAULT_LOCATIONS = ['苏州', '昆山', '东莞', '深圳', '宁波', '常州', '上海', '无锡', '台州', '厦门'];
 export const DEFAULT_SUPPLIERS = [

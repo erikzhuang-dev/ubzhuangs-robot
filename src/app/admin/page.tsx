@@ -202,7 +202,8 @@ export default function AdminPage() {
     if (loggedIn) {
       setFactoriesState(getFactories());
       setProductsState(getProducts());
-      setRunnerTypesState(getRunnerTypes());
+      // 流道类型只保留热流道/冷流道，过滤 localStorage 旧配置中的半热流道、针阀式热流道
+      setRunnerTypesState(getRunnerTypes().filter((r) => r === '热流道' || r === '冷流道'));
       setMaterialsState(getMaterials());
       setLocationsState(getLocations());
       setSuppliersState(getSuppliers());

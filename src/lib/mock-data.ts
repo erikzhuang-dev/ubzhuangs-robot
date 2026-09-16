@@ -64,7 +64,7 @@ const SUPPLIERS = [
   { cn: '国盛精密', en: 'Guosheng Precision' },
 ];
 
-const RUNNER_TYPES = ['热流道', '冷流道', '半热流道', '针阀式热流道'];
+const RUNNER_TYPES = ['热流道', '冷流道'];
 const MATERIALS = ['PP', 'PE', 'PC', 'ABS', 'PS', 'PVC', 'PMMA', 'POM', 'PA66', 'PBT'];
 const STATUSES: Mold['status'][] = ['active', 'active', 'active', 'active', 'maintenance', 'retired', 'pending'];
 const LOCATIONS = ['苏州', '昆山', '东莞', '深圳', '宁波', '常州', '上海', '无锡', '台州', '厦门'];
