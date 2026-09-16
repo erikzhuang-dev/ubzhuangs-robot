@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   BUS,
@@ -19,7 +19,7 @@ import {
 import { purgeRequestsByRetention } from '@/lib/request-store';
 import type { Product } from '@/lib/types';
 
-type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships' | 'formula' | 'approval';
+type Tab = 'factories' | 'products' | 'runners' | 'materials' | 'locations' | 'suppliers' | 'assetOwnerships' | 'formula' | 'approval' | 'backup';
 type Lang = 'en' | 'zh';
 
 const translations = {
@@ -75,6 +75,22 @@ const translations = {
     retentionDesc: 'Approved / rejected / cancelled requests older than this many days will be purged. 0 = keep forever.',
     on: 'On',
     off: 'Off',
+    backup: 'Data Backup',
+    backupDesc: 'Export all system data (molds, requests, drafts, configurations and admin PIN) as a JSON backup file for migration to another account, or restore from a backup file. Login sessions are not included.',
+    exportBackup: 'Export Backup File',
+    backupScope: 'Backup scope',
+    scopeMolds: 'Mold inventory',
+    scopeRequests: 'Approval requests',
+    scopeDrafts: 'Unsubmitted drafts',
+    scopeConfigs: 'All dropdown configurations',
+    scopePin: 'Admin PIN',
+    currentData: 'Current data snapshot',
+    importBackup: 'Restore from backup file',
+    importBtn: 'Restore Now',
+    importConfirm: 'Restoring will OVERWRITE all current data. Continue?',
+    importSuccess: 'Backup restored successfully. {n} data groups written. Reloading...',
+    importError: 'Invalid backup file. Please check the file format.',
+    reloadBtn: 'Reload Now',
   },
   zh: {
     title: '后台管理',
@@ -128,10 +144,26 @@ const translations = {
     retentionDesc: '超过该天数的已通过/已驳回/已撤回申请单将被自动清理，0 表示永久保留',
     on: '开',
     off: '关',
+    backup: '数据备份',
+    backupDesc: '将系统全部数据（模具台账、申请单、草稿、配置项、管理员口令）导出为 JSON 备份文件，用于迁移到其他账号；也可从备份文件恢复数据。登录会话不在备份范围内。',
+    exportBackup: '导出备份文件',
+    backupScope: '备份范围',
+    scopeMolds: '模具台账',
+    scopeRequests: '申请审批单',
+    scopeDrafts: '未提交草稿',
+    scopeConfigs: '全部下拉配置项',
+    scopePin: '管理员口令',
+    currentData: '当前数据概览',
+    importBackup: '从备份文件恢复',
+    importBtn: '立即恢复',
+    importConfirm: '恢复操作将覆盖当前全部数据，是否继续？',
+    importSuccess: '备份恢复成功，共写入 {n} 组数据，即将刷新页面...',
+    importError: '备份文件无效，请检查文件格式',
+    reloadBtn: '立即刷新',
   },
 };
 
-const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships', 'formula', 'approval'];
+const TABS: Tab[] = ['factories', 'products', 'runners', 'materials', 'locations', 'suppliers', 'assetOwnerships', 'formula', 'approval', 'backup'];
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('factories');
@@ -484,6 +516,7 @@ export default function AdminPage() {
           )}
           {tab === 'formula' && <FormulaPanel lang={lang} />}
           {tab === 'approval' && <ApprovalPanel lang={lang} />}
+          {tab === 'backup' && <BackupPanel lang={lang} />}
         </div>
       </div>
     </div>
@@ -904,6 +937,179 @@ function SupplierList({
           <div className="py-8 text-center text-xs" style={{ color: '#6b7c6b' }}>{t.empty}</div>
         )}
       </div>
+    </div>
+  );
+}
+// ── Data backup & migration panel ──
+const BACKUP_KEYS = [
+  'molds',
+  'mold_requests',
+  'mold_draft_edits',
+  'config_factories',
+  'config_products',
+  'config_runnerTypes',
+  'config_materials',
+  'config_locations',
+  'config_suppliers',
+  'config_assetOwnerships',
+  'config_monthlyWorkDays',
+  'config_admin',
+  'config_last_applicant',
+  'config_pending_notify',
+  'config_request_retention',
+] as const;
+
+function BackupPanel({ lang }: { lang: Lang }) {
+  const t = translations[lang];
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [stats, setStats] = useState<{ key: string; count: number }[]>([]);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const readCount = (key: string): number => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return 0;
+      const v = JSON.parse(raw);
+      if (Array.isArray(v)) return v.length;
+      if (typeof v === 'number') return v;
+      return 1;
+    } catch {
+      return 0;
+    }
+  };
+
+  useEffect(() => {
+    setStats(BACKUP_KEYS.map((key) => ({ key, count: readCount(key) })).filter((s) => s.count > 0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleExport = () => {
+    const data: Record<string, unknown> = {};
+    for (const key of BACKUP_KEYS) {
+      const raw = window.localStorage.getItem(key);
+      if (raw !== null) data[key] = JSON.parse(raw);
+    }
+    const payload = {
+      app: 'mold-system',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    a.href = url;
+    a.download = `mold-system-backup-${ts.getFullYear()}${pad(ts.getMonth() + 1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    if (!window.confirm(t.importConfirm)) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result)) as { app?: string; version?: number; data?: Record<string, unknown> };
+        if (!parsed || parsed.app !== 'mold-system' || typeof parsed.data !== 'object' || parsed.data === null) {
+          setMsg({ ok: false, text: t.importError });
+          return;
+        }
+        let count = 0;
+        for (const key of BACKUP_KEYS) {
+          if (key in parsed.data) {
+            window.localStorage.setItem(key, JSON.stringify(parsed.data[key]));
+            count += 1;
+          }
+        }
+        setMsg({ ok: true, text: t.importSuccess.replace('{n}', String(count)) });
+        setStats(BACKUP_KEYS.map((k) => ({ key: k, count: readCount(k) })).filter((s) => s.count > 0));
+        setTimeout(() => window.location.reload(), 1200);
+      } catch {
+        setMsg({ ok: false, text: t.importError });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const scopeItems = [
+    t.scopeMolds,
+    t.scopeRequests,
+    t.scopeDrafts,
+    t.scopeConfigs,
+    t.scopePin,
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.backup}</h4>
+        <p className="mt-1 text-xs leading-relaxed" style={{ color: '#6b7c6b' }}>{t.backupDesc}</p>
+      </div>
+
+      <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.backupScope}</h4>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {scopeItems.map((s) => (
+            <span key={s} className="rounded-full px-3 py-1 text-xs" style={{ backgroundColor: '#e7f0e2', color: '#4a7c59' }}>
+              {s}
+            </span>
+          ))}
+        </div>
+        {stats.length > 0 && (
+          <div className="mt-3 border-t pt-3" style={{ borderColor: '#e0e8dc' }}>
+            <p className="text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.currentData}</p>
+            <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1">
+              {stats.map((s) => (
+                <span key={s.key} className="text-xs" style={{ color: '#6b7c6b' }}>
+                  {s.key} <span className="font-semibold" style={{ color: '#2d3b2d' }}>{s.count}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={handleExport}
+          className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: '#4a7c59' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          {t.exportBackup}
+        </button>
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-[#f0f7ec]"
+          style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          {t.importBtn}
+        </button>
+        <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={handleImportFile} />
+      </div>
+
+      {msg && (
+        <div
+          className="rounded-lg border px-4 py-2.5 text-xs"
+          style={{
+            borderColor: msg.ok ? '#a8d5a2' : '#f5c6cb',
+            backgroundColor: msg.ok ? '#e7f0e2' : '#fdecea',
+            color: msg.ok ? '#4a7c59' : '#c0392b',
+          }}
+        >
+          {msg.text}
+        </div>
+      )}
     </div>
   );
 }
