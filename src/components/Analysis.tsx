@@ -88,6 +88,51 @@ const AT = {
     pcsHr: '件/小时',
     wanYuan: '万元',
     count: '个',
+    unitItem: '条',
+    moldUnit: '个模具',
+    name: '名称',
+    coeff: '系数',
+    bu: 'BU',
+    factory: '工厂',
+    quantity: '数量',
+    investment: '投资额',
+    lossShort: '损耗',
+    product: '产品',
+    lossCoeffLabel: '损耗系数',
+    thresholdDeviation: '偏离 > 2%',
+    legendNote: '虚线: 默认值5% | 红色底: 偏离区域',
+    factoryCapacityRank: '各工厂实际可用产能排名',
+    severeShort: '严重',
+    moderateShort: '中等',
+    // 模块通用词条补充
+    unitPiece: '个',
+    unitMolds: '个模具',
+    deviatedMoldCount: '偏离默认值模具数',
+    lossDistNote: '虚线: 默认值5% | 红色底: 偏离区域',
+    abnormalMoldList: '损耗系数异常模具明细',
+    colName: '名称',
+    colCoeff: '系数',
+    colDeviation: '偏差',
+    colReason: '原因',
+    colBU: 'BU',
+    colFactory: '工厂',
+    colCount: '数量',
+    colInvestment: '投资额',
+    colLoss: '损耗',
+    colProduct: '产品',
+    fullCoverageProducts: '全覆盖产品',
+    blankCoverage: '空白覆盖',
+    severeWarning: '严重预警',
+    moderateWarning: '中等预警',
+    normalLabel: '正常',
+    warningTrend30d: '近30天预警趋势',
+    colLevel: '等级',
+    colMoldName: '模具名称',
+    colMetric: '异常指标',
+    colValue: '异常值',
+    colThreshold: '阈值',
+    lossCoeffShort: '损耗系数',
+    oeeByFactory: '各工厂平均OEE对比',
   },
   en: {
     title: 'Mold Data Analysis',
@@ -148,6 +193,51 @@ const AT = {
     pcsHr: 'pcs/hr',
     wanYuan: '10k ¥',
     count: 'pcs',
+    unitItem: 'items',
+    moldUnit: 'molds',
+    name: 'Name',
+    coeff: 'Coeff.',
+    bu: 'BU',
+    factory: 'Factory',
+    quantity: 'Count',
+    investment: 'Investment',
+    lossShort: 'Loss',
+    product: 'Product',
+    lossCoeffLabel: 'Loss Coeff.',
+    thresholdDeviation: 'Deviation > 2%',
+    legendNote: 'Dashed: default 5% | Red: deviation zone',
+    factoryCapacityRank: 'Actual Available Capacity by Factory',
+    severeShort: 'Severe',
+    moderateShort: 'Moderate',
+    // Additional shared entries
+    unitPiece: 'pcs',
+    unitMolds: 'molds',
+    deviatedMoldCount: 'Deviated Mold Count',
+    lossDistNote: 'Dashed: default 5% | Red: deviation zone',
+    abnormalMoldList: 'Abnormal Loss Coefficient Details',
+    colName: 'Name',
+    colCoeff: 'Coeff.',
+    colDeviation: 'Deviation',
+    colReason: 'Reason',
+    colBU: 'BU',
+    colFactory: 'Factory',
+    colCount: 'Count',
+    colInvestment: 'Investment',
+    colLoss: 'Loss',
+    colProduct: 'Product',
+    fullCoverageProducts: 'Fully Covered Products',
+    blankCoverage: 'Blank Coverage',
+    severeWarning: 'Severe Warnings',
+    moderateWarning: 'Moderate Warnings',
+    normalLabel: 'Normal',
+    warningTrend30d: 'Warning Trend (30 Days)',
+    colLevel: 'Level',
+    colMoldName: 'Mold Name',
+    colMetric: 'Metric',
+    colValue: 'Value',
+    colThreshold: 'Threshold',
+    lossCoeffShort: 'Loss Coeff.',
+    oeeByFactory: 'Avg OEE by Factory',
   },
 } as const;
 
@@ -184,8 +274,8 @@ function SectionCard({ title, children }: { title: string; children: React.React
 }
 
 // ========== Module 1: Investment Overview ==========
-function Module1({ molds }: { molds: Mold[] }) {
-  const t = AT.zh; // will be overridden by props
+function Module1({ molds, lang }: { molds: Mold[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const totalInvestment = molds.reduce((s, m) => s + m.unitPrice * m.quantity, 0);
   const totalMolds = molds.length;
   const avgPrice = totalMolds > 0 ? totalInvestment / totalMolds : 0;
@@ -214,16 +304,16 @@ function Module1({ molds }: { molds: Mold[] }) {
   }, [molds]);
 
   return (
-    <SectionCard title="模具总投资概览">
+    <SectionCard title={t.m1Title}>
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <KPICard label="模具总数量" value={fmtInt(totalMolds)} unit="个" color={GREEN} />
-        <KPICard label="投资总额(万元)" value={fmt(totalInvestment / 10000)} unit="万元" color={GREEN} />
-        <KPICard label="平均单价(万元)" value={fmt(avgPrice / 10000)} unit="万元" color={GREEN} />
-        <KPICard label="同比变化" value={`+${yoyChange}%`} color={yoyChange >= 0 ? RED : GREEN} />
+        <KPICard label={t.totalMolds} value={fmtInt(totalMolds)} unit={t.count} color={GREEN} />
+        <KPICard label={t.totalInvestment} value={fmt(totalInvestment / 10000)} unit={t.wanYuan} color={GREEN} />
+        <KPICard label={t.avgUnitPrice} value={fmt(avgPrice / 10000)} unit={t.wanYuan} color={GREEN} />
+        <KPICard label={t.yoyChange} value={`+${yoyChange}%`} color={yoyChange >= 0 ? RED : GREEN} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>各BU投资占比</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.buInvestment}</div>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={buData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -234,7 +324,7 @@ function Module1({ molds }: { molds: Mold[] }) {
           </ResponsiveContainer>
         </div>
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>各工厂投资金额</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.factoryInvestment}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={factoryData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
@@ -253,7 +343,8 @@ function Module1({ molds }: { molds: Mold[] }) {
 }
 
 // ========== Module 2: Capacity Distribution ==========
-function Module2({ molds, products }: { molds: Mold[]; products: Product[] }) {
+function Module2({ molds, products, lang }: { molds: Mold[]; products: Product[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const totalHC = useMemo(() => molds.reduce((s, m) => s + m.hourlyCapacity, 0), [molds]);
   const activeHC = useMemo(() => molds.filter(m => m.status === 'active').reduce((s, m) => s + m.hourlyCapacity, 0), [molds]);
   const utilization = totalHC > 0 ? (activeHC / totalHC * 100) : 0;
@@ -284,14 +375,14 @@ function Module2({ molds, products }: { molds: Mold[]; products: Product[] }) {
   }, [molds]);
 
   return (
-    <SectionCard title="产能分布分析">
+    <SectionCard title={t.m2Title}>
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <KPICard label="全厂每小时产能" value={fmtInt(totalHC)} unit="件/小时" color={GREEN} />
-        <KPICard label="产能利用率" value={`${fmt(utilization)}%`} color={utilization < 60 ? RED : GREEN} />
+        <KPICard label={t.totalHourlyCapacity} value={fmtInt(totalHC)} unit={t.pcsHr} color={GREEN} />
+        <KPICard label={t.capacityUtilization} value={`${fmt(utilization)}%`} color={utilization < 60 ? RED : GREEN} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>各BU产品线产能分布</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.buCapacity}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={buCapacityData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
@@ -306,7 +397,7 @@ function Module2({ molds, products }: { molds: Mold[]; products: Product[] }) {
           </ResponsiveContainer>
         </div>
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>各工厂实际可用产能排名</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.factoryCapacityRank}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={factoryCapacityData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
@@ -323,7 +414,8 @@ function Module2({ molds, products }: { molds: Mold[]; products: Product[] }) {
 }
 
 // ========== Module 3: OEE Analysis ==========
-function Module3({ molds }: { molds: Mold[] }) {
+function Module3({ molds, lang }: { molds: Mold[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const avgOEE = useMemo(() => {
     if (molds.length === 0) return 0;
     return molds.reduce((s, m) => s + m.oee, 0) / molds.length;
@@ -362,11 +454,11 @@ function Module3({ molds }: { molds: Mold[] }) {
   const gaugeColor = avgOEE < 0.7 ? RED : avgOEE < 0.9 ? YELLOW : GREEN;
 
   return (
-    <SectionCard title="OEE设备效率分析">
+    <SectionCard title={t.m3Title}>
       <div className="grid grid-cols-3 gap-4">
         {/* Gauge */}
         <div className="flex flex-col items-center justify-center">
-          <div className="text-xs mb-2" style={{ color: '#6b7c6b' }}>全厂平均OEE</div>
+          <div className="text-xs mb-2" style={{ color: '#6b7c6b' }}>{t.avgOEE}</div>
           <svg width="140" height="90" viewBox="0 0 140 90">
             <path d="M 10 80 A 60 60 0 0 1 130 80" fill="none" stroke="#e0e8dc" strokeWidth="12" />
             <path d="M 10 80 A 60 60 0 0 1 130 80" fill="none" stroke={gaugeColor} strokeWidth="12"
@@ -385,7 +477,7 @@ function Module3({ molds }: { molds: Mold[] }) {
         </div>
         {/* BU OEE Bar */}
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>各BU平均OEE</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.buOEE}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={buOeeData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
@@ -402,7 +494,7 @@ function Module3({ molds }: { molds: Mold[] }) {
         </div>
         {/* Factory OEE Scatter */}
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>各工厂OEE分布</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.factoryOEEDist}</div>
           <ResponsiveContainer width="100%" height={200}>
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
@@ -420,7 +512,8 @@ function Module3({ molds }: { molds: Mold[] }) {
 }
 
 // ========== Module 4: Loss Analysis ==========
-function Module4({ molds }: { molds: Mold[] }) {
+function Module4({ molds, lang }: { molds: Mold[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const avgLoss = useMemo(() => {
     if (molds.length === 0) return 0;
     return molds.reduce((s, m) => s + m.lossCoefficient, 0) / molds.length;
@@ -446,13 +539,13 @@ function Module4({ molds }: { molds: Mold[] }) {
   }, [molds]);
 
   return (
-    <SectionCard title="模具损耗分析">
+    <SectionCard title={t.m4Title}>
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <KPICard label="平均损耗系数" value={`${(avgLoss * 100).toFixed(2)}%`} color={Math.abs(avgLoss - 0.05) > 0.01 ? YELLOW : GREEN} />
-        <KPICard label="偏离默认值模具数" value={fmtInt(deviatedMolds.length)} unit="个" color={deviatedMolds.length > 0 ? YELLOW : GREEN} />
+        <KPICard label={t.avgLoss} value={`${(avgLoss * 100).toFixed(2)}%`} color={Math.abs(avgLoss - 0.05) > 0.01 ? YELLOW : GREEN} />
+        <KPICard label={t.deviatedMoldCount} value={fmtInt(deviatedMolds.length)} unit={t.unitPiece} color={deviatedMolds.length > 0 ? YELLOW : GREEN} />
       </div>
       <div className="mb-4">
-        <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>损耗系数分布</div>
+        <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.lossDist}</div>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={lossDistData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
@@ -466,21 +559,21 @@ function Module4({ molds }: { molds: Mold[] }) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <div className="text-xs mt-1 text-center" style={{ color: '#6b7c6b' }}>虚线: 默认值5% | 红色底: 偏离区域</div>
+        <div className="text-xs mt-1 text-center" style={{ color: '#6b7c6b' }}>{t.lossDistNote}</div>
       </div>
       {deviatedMolds.length > 0 && (
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>损耗系数异常模具明细</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.abnormalMoldList}</div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs" style={{ color: '#2d3b2d' }}>
               <thead>
                 <tr className="border-b" style={{ borderColor: '#e0e8dc' }}>
-                  <th className="text-left py-2 font-medium">名称</th>
-                  <th className="text-left py-2 font-medium">系数</th>
-                  <th className="text-left py-2 font-medium">偏差</th>
-                  <th className="text-left py-2 font-medium">原因</th>
-                  <th className="text-left py-2 font-medium">BU</th>
-                  <th className="text-left py-2 font-medium">工厂</th>
+                  <th className="text-left py-2 font-medium">{t.colName}</th>
+                  <th className="text-left py-2 font-medium">{t.colCoeff}</th>
+                  <th className="text-left py-2 font-medium">{t.colDeviation}</th>
+                  <th className="text-left py-2 font-medium">{t.colReason}</th>
+                  <th className="text-left py-2 font-medium">{t.colBU}</th>
+                  <th className="text-left py-2 font-medium">{t.colFactory}</th>
                 </tr>
               </thead>
               <tbody>
@@ -504,7 +597,8 @@ function Module4({ molds }: { molds: Mold[] }) {
 }
 
 // ========== Module 5: Supplier Comparison ==========
-function Module5({ molds }: { molds: Mold[] }) {
+function Module5({ molds, lang }: { molds: Mold[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const supplierData = useMemo(() => {
     const map: Record<string, { total: number; oeeTotal: number; lossTotal: number; investment: number }> = {};
     molds.forEach((m) => {
@@ -527,15 +621,15 @@ function Module5({ molds }: { molds: Mold[] }) {
   const sorted = useMemo(() => [...supplierData].sort((a, b) => b.count - a.count), [supplierData]);
 
   return (
-    <SectionCard title="供应商对比分析">
+    <SectionCard title={t.m5Title}>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>供应商气泡图</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.supplierBubble}</div>
           <ResponsiveContainer width="100%" height={220}>
             <ScatterChart>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e8dc" />
-              <XAxis dataKey="count" name="模具数量" tick={{ fontSize: 11, fill: '#6b7c6b' }} />
-              <YAxis dataKey="avgOEE" name="平均OEE" tick={{ fontSize: 11, fill: '#6b7c6b' }} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} domain={[0.5, 1]} />
+              <XAxis dataKey="count" name={t.moldCount} tick={{ fontSize: 11, fill: '#6b7c6b' }} />
+              <YAxis dataKey="avgOEE" name={t.avgOEE} tick={{ fontSize: 11, fill: '#6b7c6b' }} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} domain={[0.5, 1]} />
               <ZAxis dataKey="investment" range={[40, 400]} />
               <Tooltip formatter={(v: number, name: string) => name === 'avgOEE' ? `${(v * 100).toFixed(1)}%` : v} />
               <Scatter data={supplierData} fill={GREEN} fillOpacity={0.6} />
@@ -543,16 +637,16 @@ function Module5({ molds }: { molds: Mold[] }) {
           </ResponsiveContainer>
         </div>
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>供应商排名</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.supplierRank}</div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs" style={{ color: '#2d3b2d' }}>
               <thead>
                 <tr className="border-b" style={{ borderColor: '#e0e8dc' }}>
-                  <th className="text-left py-1.5 font-medium">名称</th>
-                  <th className="text-right py-1.5 font-medium">数量</th>
-                  <th className="text-right py-1.5 font-medium">投资额</th>
+                  <th className="text-left py-1.5 font-medium">{t.colName}</th>
+                  <th className="text-right py-1.5 font-medium">{t.colCount}</th>
+                  <th className="text-right py-1.5 font-medium">{t.colInvestment}</th>
                   <th className="text-right py-1.5 font-medium">OEE</th>
-                  <th className="text-right py-1.5 font-medium">损耗</th>
+                  <th className="text-right py-1.5 font-medium">{t.colLoss}</th>
                 </tr>
               </thead>
               <tbody>
@@ -575,7 +669,8 @@ function Module5({ molds }: { molds: Mold[] }) {
 }
 
 // ========== Module 6: Product-Factory Matrix ==========
-function Module6({ molds }: { molds: Mold[] }) {
+function Module6({ molds, lang }: { molds: Mold[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const { matrix, products, factories } = useMemo(() => {
     const prodSet = [...new Set(molds.map(m => m.productId))].slice(0, 12);
     const factSet = [...new Set(molds.map(m => m.factory))];
@@ -604,17 +699,17 @@ function Module6({ molds }: { molds: Mold[] }) {
   }, [matrix]);
 
   return (
-    <SectionCard title="产品-工厂矩阵分析">
+    <SectionCard title={t.m6Title}>
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <KPICard label="全覆盖产品" value={fmtInt(fullCoverage)} unit="个" color={GREEN} />
-        <KPICard label="空白覆盖" value={fmtInt(emptyCoverage)} unit="个" color={emptyCoverage > 0 ? RED : GREEN} />
-        <KPICard label="冗余最高" value={`${maxCount} 模具`} color={maxCount > 5 ? YELLOW : GREEN} />
+        <KPICard label={t.fullCoverageProducts} value={fmtInt(fullCoverage)} unit={t.unitPiece} color={GREEN} />
+        <KPICard label={t.blankCoverage} value={fmtInt(emptyCoverage)} unit={t.unitPiece} color={emptyCoverage > 0 ? RED : GREEN} />
+        <KPICard label={t.maxRedundancy} value={`${maxCount} ${t.unitMolds}`} color={maxCount > 5 ? YELLOW : GREEN} />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs" style={{ color: '#2d3b2d' }}>
           <thead>
             <tr>
-              <th className="text-left py-1.5 font-medium w-20">产品</th>
+              <th className="text-left py-1.5 font-medium w-20">{t.colProduct}</th>
               {factories.map(f => (
                 <th key={f} className="text-center py-1.5 font-medium">{f}</th>
               ))}
@@ -646,7 +741,8 @@ function Module6({ molds }: { molds: Mold[] }) {
 }
 
 // ========== Module 7: Warning Overview ==========
-function Module7({ molds }: { molds: Mold[] }) {
+function Module7({ molds, lang }: { molds: Mold[]; lang: 'zh' | 'en' }) {
+  const t = AT[lang];
   const warnings = useMemo(() => {
     const list: { level: 'severe' | 'moderate'; mold: Mold; metric: string; value: string; threshold: string }[] = [];
     molds.forEach(m => {
@@ -657,7 +753,7 @@ function Module7({ molds }: { molds: Mold[] }) {
       }
       const dev = Math.abs(m.lossCoefficient - 0.05);
       if (dev > 0.02) {
-        list.push({ level: 'moderate', mold: m, metric: '损耗系数', value: `${(m.lossCoefficient * 100).toFixed(2)}%`, threshold: '偏离 > 2%' });
+        list.push({ level: 'moderate', mold: m, metric: 'loss', value: `${(m.lossCoefficient * 100).toFixed(2)}%`, threshold: '偏离 > 2%' });
       }
     });
     return list.sort((a, b) => a.level === 'severe' ? -1 : 1);
@@ -675,13 +771,13 @@ function Module7({ molds }: { molds: Mold[] }) {
   }, [severeCount, moderateCount]);
 
   return (
-    <SectionCard title="异常预警总览">
+    <SectionCard title={t.m7Title}>
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <KPICard label="严重预警" value={fmtInt(severeCount)} unit="条" color={RED} />
-        <KPICard label="中等预警" value={fmtInt(moderateCount)} unit="条" color={YELLOW} />
-        <KPICard label="正常" value={fmtInt(normalCount)} unit="条" color={GREEN} />
+        <KPICard label={t.severeWarning} value={fmtInt(severeCount)} unit={t.unitItem} color={RED} />
+        <KPICard label={t.moderateWarning} value={fmtInt(moderateCount)} unit={t.unitItem} color={YELLOW} />
+        <KPICard label={t.normalLabel} value={fmtInt(normalCount)} unit={t.unitItem} color={GREEN} />
         <div>
-          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>近30天预警趋势</div>
+          <div className="text-xs font-medium mb-2" style={{ color: '#6b7c6b' }}>{t.warningTrend30d}</div>
           <ResponsiveContainer width="100%" height={60}>
             <ComposedChart data={trendData}>
               <Area dataKey="warnings" fill="#fde8e8" stroke={RED} />
@@ -693,13 +789,13 @@ function Module7({ molds }: { molds: Mold[] }) {
         <table className="w-full text-xs" style={{ color: '#2d3b2d' }}>
           <thead>
             <tr className="border-b" style={{ borderColor: '#e0e8dc' }}>
-              <th className="text-left py-1.5 font-medium">等级</th>
-              <th className="text-left py-1.5 font-medium">模具名称</th>
-              <th className="text-left py-1.5 font-medium">异常指标</th>
-              <th className="text-left py-1.5 font-medium">异常值</th>
-              <th className="text-left py-1.5 font-medium">阈值</th>
-              <th className="text-left py-1.5 font-medium">BU</th>
-              <th className="text-left py-1.5 font-medium">工厂</th>
+              <th className="text-left py-1.5 font-medium">{t.colLevel}</th>
+              <th className="text-left py-1.5 font-medium">{t.colMoldName}</th>
+              <th className="text-left py-1.5 font-medium">{t.colMetric}</th>
+              <th className="text-left py-1.5 font-medium">{t.colValue}</th>
+              <th className="text-left py-1.5 font-medium">{t.colThreshold}</th>
+              <th className="text-left py-1.5 font-medium">{t.colBU}</th>
+              <th className="text-left py-1.5 font-medium">{t.colFactory}</th>
             </tr>
           </thead>
           <tbody>
@@ -710,11 +806,11 @@ function Module7({ molds }: { molds: Mold[] }) {
                     backgroundColor: w.level === 'severe' ? '#fde8e8' : '#fef3cd',
                     color: w.level === 'severe' ? RED : YELLOW,
                   }}>
-                    {w.level === 'severe' ? '严重' : '中等'}
+                    {w.level === 'severe' ? t.severeShort : t.moderateShort}
                   </span>
                 </td>
                 <td className="py-1">{w.mold.name}</td>
-                <td className="py-1">{w.metric}</td>
+                <td className="py-1">{w.metric === 'loss' ? t.lossCoeffShort : w.metric}</td>
                 <td className="py-1" style={{ color: w.level === 'severe' ? RED : YELLOW }}>{w.value}</td>
                 <td className="py-1">{w.threshold}</td>
                 <td className="py-1">{w.mold.buId}</td>
@@ -804,16 +900,16 @@ export default function Analysis({ molds, products, factories, lang, onBack }: A
 
         {/* 2x3 Grid */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <Module1 molds={filteredMolds} />
-          <Module2 molds={filteredMolds} products={products} />
-          <Module3 molds={filteredMolds} />
-          <Module4 molds={filteredMolds} />
-          <Module5 molds={filteredMolds} />
-          <Module6 molds={filteredMolds} />
+          <Module1 molds={filteredMolds} lang={lang} />
+          <Module2 molds={filteredMolds} products={products} lang={lang} />
+          <Module3 molds={filteredMolds} lang={lang} />
+          <Module4 molds={filteredMolds} lang={lang} />
+          <Module5 molds={filteredMolds} lang={lang} />
+          <Module6 molds={filteredMolds} lang={lang} />
         </div>
 
         {/* Full-width Module 7 */}
-        <Module7 molds={filteredMolds} />
+        <Module7 molds={filteredMolds} lang={lang} />
       </div>
     </div>
   );
