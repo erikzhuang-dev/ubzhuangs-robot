@@ -608,6 +608,9 @@ export default function Home() {
     return molds.map((m) => (draftEdits[m.id] ? { ...m, ...draftEdits[m.id] } : m));
   }, [molds, draftEdits, adminMode]);
 
+  // Toolbar control font: slightly smaller in English to keep the bar on one line
+  const toolbarTextCls = lang === 'en' ? 'text-[13px]' : 'text-sm';
+
   // Filtered molds
   const filteredMolds = useMemo(() => {
     return displayMolds.filter((m) => {
@@ -1603,11 +1606,11 @@ export default function Home() {
 
         {/* Toolbar */}
         <div
-          className="mb-4 flex items-center justify-between rounded-2xl bg-white px-6 py-4"
+          className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-2xl bg-white px-6 py-4"
           style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
         >
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold" style={{ color: '#2d3b2d' }}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h2 className="shrink-0 whitespace-nowrap text-lg font-semibold" style={{ color: '#2d3b2d' }}>
               {t.title}
             </h2>
             {/* Search */}
@@ -1617,14 +1620,14 @@ export default function Home() {
               placeholder={t.searchPlaceholder}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="h-9 w-64 rounded-lg border px-3 py-1 text-sm outline-none transition-colors focus:border-[#4a7c59]"
+              className={`h-9 rounded-lg border px-3 py-1 outline-none transition-colors focus:border-[#4a7c59] ${toolbarTextCls} ${lang === 'en' ? 'w-56' : 'w-64'}`}
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             />
             {/* Factory filter */}
             <select
               value={factoryFilter}
               onChange={(e) => setFactoryFilter(e.target.value)}
-              className="h-9 rounded-lg border px-3 text-sm outline-none"
+              className={`h-9 rounded-lg border px-3 outline-none ${toolbarTextCls}`}
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             >
               <option value="">{t.allFactories}</option>
@@ -1638,7 +1641,7 @@ export default function Home() {
             <select
               value={runnerFilter}
               onChange={(e) => setRunnerFilter(e.target.value)}
-              className="h-9 rounded-lg border px-3 text-sm outline-none"
+              className={`h-9 rounded-lg border px-3 outline-none ${toolbarTextCls}`}
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             >
               <option value="">{t.allRunners}</option>
@@ -1652,7 +1655,7 @@ export default function Home() {
             <select
               value={moldTypeFilter}
               onChange={(e) => setMoldTypeFilter(e.target.value)}
-              className="h-9 rounded-lg border px-3 text-sm outline-none"
+              className={`h-9 rounded-lg border px-3 outline-none ${toolbarTextCls}`}
               style={{ borderColor: '#e0e8dc', color: '#2d3b2d' }}
             >
               <option value="">{t.allMoldTypes}</option>
@@ -1660,16 +1663,16 @@ export default function Home() {
               <option value="trial">{t.trialMold}</option>
             </select>
             {/* Record count */}
-            <span className="text-sm whitespace-nowrap" style={{ color: '#6b7c6b' }}>
+            <span className={`shrink-0 whitespace-nowrap ${toolbarTextCls}`} style={{ color: '#6b7c6b' }}>
               {t.totalRecords(filteredMolds.length)}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             {/* Add button (admin direct-add only; standard users use nav request buttons) */}
             {adminMode && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+                className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 font-medium text-white transition-colors hover:opacity-90 ${toolbarTextCls}`}
                 style={{ backgroundColor: '#4a7c59' }}
               >
                 <svg
@@ -1691,7 +1694,7 @@ export default function Home() {
             {/* Export button */}
             <button
               onClick={handleExport}
-              className="flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+              className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 font-medium text-white transition-colors hover:opacity-90 ${toolbarTextCls}`}
               style={{ backgroundColor: '#4a7c59' }}
             >
               <svg
@@ -1889,7 +1892,7 @@ export default function Home() {
                 };
                 input.click();
               }}
-              className="flex h-9 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-gray-50"
+              className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-4 font-medium transition-colors hover:bg-gray-50 ${toolbarTextCls}`}
               style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
             >
               <svg
