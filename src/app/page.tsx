@@ -1857,33 +1857,41 @@ export default function Home() {
                         };
                       });
 
-                      setMolds(importedMolds);
-                      // 台账基线被导入重建：作废所有待审批申请（其目标模具可能已消失），并清空未提交草稿，防止审批通过后修改静默丢失
-                      let cancelledCount = 0;
-                      getRequests()
-                        .filter((r) => r.status === 'pending')
-                        .forEach((r) => {
-                          updateRequest(r.id, {
-                            status: 'cancelled',
-                            reviewedAt: new Date().toISOString(),
-                            reviewComment: lang === 'zh' ? 'Excel 导入覆盖台账，原申请自动作废' : 'Auto-cancelled: registry overwritten by Excel import',
-                          });
-                          cancelledCount++;
+                      // 合并导入（upsert）：编号已存在 → 更新该模具信息（保留原 id，申请单/草稿引用不断链）；编号不存在 → 新增；原清单中其余模具全部保留
+                      const nextMolds = [...molds];
+                      const updatedIds: string[] = [];
+                      let addedCount = 0;
+                      let updatedCount = 0;
+                      for (const im of importedMolds) {
+                        const idx = im.code ? nextMolds.findIndex((m) => m.code === im.code) : -1;
+                        if (idx >= 0) {
+                          nextMolds[idx] = { ...nextMolds[idx], ...im, id: nextMolds[idx].id };
+                          updatedIds.push(nextMolds[idx].id);
+                          updatedCount++;
+                        } else {
+                          nextMolds.push(im);
+                          addedCount++;
+                        }
+                      }
+                      setMolds(nextMolds);
+                      // 导入的正式数据优先于未提交草稿：清除被更新模具的本地草稿
+                      if (updatedIds.length > 0) {
+                        setDraftEdits((prev) => {
+                          const next = { ...prev };
+                          for (const id of updatedIds) delete next[id];
+                          return next;
                         });
-                      if (cancelledCount > 0) setRequests(getRequests());
-                      setDraftEdits({});
+                      }
                       setExpandedRow(null);
                       const dupTip = dupCodes.length
                         ? lang === 'zh'
                           ? `；重复编号已自动重命名：${dupCodes.slice(0, 5).join('、')}${dupCodes.length > 5 ? ' 等' : ''}`
                           : `; duplicated codes renamed: ${dupCodes.slice(0, 5).join(', ')}${dupCodes.length > 5 ? ' etc.' : ''}`
                         : '';
-                      const cancelTip = cancelledCount > 0
-                        ? lang === 'zh'
-                          ? `；${cancelledCount} 条待审批申请已自动作废`
-                          : `; ${cancelledCount} pending request(s) auto-cancelled`
-                        : '';
-                      alert(lang === 'zh' ? `成功导入 ${importedMolds.length} 条模具数据${dupTip}${cancelTip}` : `Successfully imported ${importedMolds.length} molds${dupTip}${cancelTip}`);
+                      const mergeTip = lang === 'zh'
+                        ? `新增 ${addedCount} 个、更新 ${updatedCount} 个，原清单其余模具均保留`
+                        : `${addedCount} added, ${updatedCount} updated, existing molds preserved`;
+                      alert(`${mergeTip}${dupTip}`);
                     } catch (err) {
                       alert(lang === 'zh' ? '导入失败，请检查文件格式' : 'Import failed, please check the file format');
                     }
