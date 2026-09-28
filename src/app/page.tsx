@@ -2709,6 +2709,7 @@ function MoldRow({
   renderDraftBar?: React.ReactNode;
 }) {
   const t = T[lang];
+  const missTip = lang === 'zh' ? '未填写' : 'Not filled';
   const totalPrice = mold.quantity * mold.unitPrice;
 
   // 漏填字段检查（详情页关键字段）
@@ -2810,7 +2811,7 @@ function MoldRow({
                     {t.basicInfo}
                   </h4>
                   <div className="space-y-3">
-                    <DetailField label={t.moldNameZh}>
+                    <DetailField missing={!!(!mold.name?.trim())} missingTip={missTip} label={t.moldNameZh}>
                       <input
                         type="text"
                         value={mold.name}
@@ -2826,7 +2827,7 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label={t.moldNameEnLabel}>
+                    <DetailField missing={!!(!mold.nameEn?.trim())} missingTip={missTip} label={t.moldNameEnLabel}>
                       <input
                         type="text"
                         value={mold.nameEn || ''}
@@ -2834,7 +2835,7 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label={t.projectNumber}>
+                    <DetailField missing={!!(!mold.projectNumber?.trim())} missingTip={missTip} label={t.projectNumber}>
                       <input
                         type="text"
                         value={mold.projectNumber || ''}
@@ -2858,7 +2859,7 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label={t.belongProduct}>
+                    <DetailField missing={!!(!mold.productId)} missingTip={missTip} label={t.belongProduct}>
                       <select
                         value={mold.productId}
                         onChange={(e) => {
@@ -2883,7 +2884,7 @@ function MoldRow({
                         )}
                       </select>
                     </DetailField>
-                    <DetailField label={t.moldCode}>
+                    <DetailField missing={!!(!mold.code?.trim())} missingTip={missTip} label={t.moldCode}>
                       <input
                         type="text"
                         value={mold.code}
@@ -2891,7 +2892,7 @@ function MoldRow({
                         className="detail-input"
                       />
                     </DetailField>
-                    <DetailField label={t.detailSupplier}>
+                    <DetailField missing={!!(!mold.supplier?.trim())} missingTip={missTip} label={t.detailSupplier}>
                       <select
                         value={lang === 'en' ? (mold.supplierEn || mold.supplier) : mold.supplier}
                         onChange={(e) => {
@@ -2943,7 +2944,7 @@ function MoldRow({
                         ))}
                       </select>
                     </DetailField>
-                    <DetailField label={t.location}>
+                    <DetailField missing={!!(!mold.location?.trim())} missingTip={missTip} label={t.location}>
                       <select
                         value={mold.location || ''}
                         onChange={(e) => onUpdate(mold.id, 'location', e.target.value)}
@@ -2983,7 +2984,7 @@ function MoldRow({
                         <option value="pending">{t.pending}</option>
                       </select>
                     </DetailField>
-                    <DetailField label={t.moldSize}>
+                    <DetailField missing={!!(!mold.moldLength || !mold.moldWidth || !mold.moldThickness)} missingTip={missTip} label={t.moldSize}>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="flex items-center gap-1">
                           <span className="text-xs" style={{ color: '#6b7c6b' }}>{t.moldLength}</span>
@@ -3033,7 +3034,7 @@ function MoldRow({
                         <option value="trial">{t.trialMold}</option>
                       </select>
                     </DetailField>
-                    <DetailField label={t.assetOwnership}>
+                    <DetailField missing={!!(!mold.assetOwnership?.trim())} missingTip={missTip} label={t.assetOwnership}>
                       <select
                         value={lang === 'en' ? (mold.assetOwnershipEn || mold.assetOwnership || '') : (mold.assetOwnership || '')}
                         onChange={(e) => {
@@ -3085,7 +3086,7 @@ function MoldRow({
                   </h4>
                   <div className="space-y-3">
                     <div className="grid grid-cols-3 gap-3">
-                      <DetailField label={t.cavities}>
+                      <DetailField missing={!!(!mold.cavities || mold.cavities <= 0)} missingTip={missTip} label={t.cavities}>
                         <input
                           type="number"
                           value={mold.cavities}
@@ -3093,7 +3094,7 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label={t.runnerType}>
+                      <DetailField missing={!!(!mold.runnerType?.trim())} missingTip={missTip} label={t.runnerType}>
                         <select
                           value={normalizeRunner(mold.runnerType)}
                           onChange={(e) => onUpdate(mold.id, 'runnerType', e.target.value)}
@@ -3106,7 +3107,7 @@ function MoldRow({
                           ))}
                         </select>
                       </DetailField>
-                      <DetailField label={t.cycleTime}>
+                      <DetailField missing={!!(!mold.cycleTime || mold.cycleTime <= 0)} missingTip={missTip} label={t.cycleTime}>
                         <input
                           type="number"
                           value={mold.cycleTime}
@@ -3173,7 +3174,7 @@ function MoldRow({
                       />
                     </DetailField>
                     <div className="grid grid-cols-3 gap-3">
-                      <DetailField label={t.quantity}>
+                      <DetailField missing={!!(!mold.quantity || mold.quantity <= 0)} missingTip={missTip} label={t.quantity}>
                         <input
                           type="number"
                           value={mold.quantity}
@@ -3181,7 +3182,7 @@ function MoldRow({
                           className="detail-input"
                         />
                       </DetailField>
-                      <DetailField label={t.unitPriceTax}>
+                      <DetailField missing={!!(!mold.unitPrice || mold.unitPrice <= 0)} missingTip={missTip} label={t.unitPriceTax}>
                         <input
                           type="number"
                           step="0.01"
@@ -3223,7 +3224,7 @@ function MoldRow({
                       />
                     </DetailField>
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label={t.material}>
+                      <DetailField missing={!!(!mold.material?.trim())} missingTip={missTip} label={t.material}>
                         <select
                           value={mold.material}
                           onChange={(e) => onUpdate(mold.id, 'material', e.target.value)}
@@ -3271,7 +3272,7 @@ function MoldRow({
                       </DetailField>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <DetailField label={t.activationDate}>
+                      <DetailField missing={!!(!mold.commissionDate)} missingTip={missTip} label={t.activationDate}>
                         <input
                           type="date"
                           value={mold.commissionDate ?? ''}
@@ -3319,7 +3320,7 @@ function MoldRow({
 }
 
 // Detail Field wrapper
-function DetailField({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function DetailField({ label, children, hint, missing, missingTip }: { label: string; children: React.ReactNode; hint?: string; missing?: boolean; missingTip?: string }) {
   return (
     <div>
       <label className="mb-1 block text-xs" style={{ color: '#6b7c6b' }}>
@@ -3336,6 +3337,13 @@ function DetailField({ label, children, hint }: { label: string; children: React
           </Tooltip>
         ) : (
           label
+        )}
+        {missing && (
+          <span
+            className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle"
+            style={{ backgroundColor: '#f39c12' }}
+            title={missingTip}
+          />
         )}
       </label>
       {children}
