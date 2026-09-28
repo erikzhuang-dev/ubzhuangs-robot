@@ -24,7 +24,7 @@ const FIELD_LABELS: Record<string, { zh: string; en: string }> = {
   nameEn: { zh: '英文名称', en: 'Name (EN)' },
   projectNumber: { zh: '项目编号', en: 'Project Number' },
   internalNumber: { zh: '内部模具编号', en: 'Internal Mold Number' },
-  drawingNumber: { zh: '图纸编号', en: 'Drawing Number' },
+  drawingNumber: { zh: '图纸编号', en: 'Component Drawing Number' },
   supplier: { zh: '供应商', en: 'Mold Maker' },
   supplierEn: { zh: '供应商(EN)', en: 'Supplier (EN)' },
   factory: { zh: '工厂', en: 'Supplier' },
@@ -287,7 +287,7 @@ const T = {
     moldThickness: 'Thickness',
     location: 'Location',
     moldWeight: 'Mold Weight (kg)',
-    drawingNumber: 'Drawing Number',
+    drawingNumber: 'Component Drawing Number',
     hotRunner: 'Hot Runner',
     coldRunner: 'Cold Runner',
     semiHotRunner: 'Semi-Hot Runner',
@@ -1079,7 +1079,7 @@ export default function Home() {
       [L === 'zh' ? '资产归属' : 'Asset Ownership']: L === 'zh' ? (m.assetOwnership || '') : (m.assetOwnershipEn || m.assetOwnership || ''),
       [L === 'zh' ? '启用时间' : 'Activation Date']: m.commissionDate || '',
       [L === 'zh' ? '寿命' : 'Lifetime']: m.depreciationYears ?? 0,
-      [L === 'zh' ? '图纸编号' : 'Drawing Number']: m.drawingNumber || '',
+      [L === 'zh' ? '图纸编号' : 'Component Drawing Number']: m.drawingNumber || '',
       [L === 'zh' ? '模具重量(kg)' : 'Mold Weight(kg)']: m.moldWeight ?? 0,
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -1852,7 +1852,7 @@ export default function Home() {
                           status: (statusMap[statusStr] || 'active') as Mold['status'],
                           projectNumber: String(row['Project Number'] || row['项目编号'] || ''),
                           internalNumber: String(row['Internal Mold Number'] || row['Internal Number'] || row['内部模具编号'] || row['内部编号'] || ''),
-                          drawingNumber: String(row['Drawing Number'] || row['图纸编号'] || ''),
+                          drawingNumber: String(row['Component Drawing Number'] || row['Drawing Number'] || row['图纸编号'] || ''),
                           moldWeight: toNum(row['Mold Weight(kg)'] ?? row['模具重量(kg)'] ?? row['模具重量'], 0),
                         };
                       });
