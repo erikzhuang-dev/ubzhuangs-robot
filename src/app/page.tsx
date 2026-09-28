@@ -1931,12 +1931,12 @@ export default function Home() {
             <thead>
               <tr style={{ backgroundColor: '#f0f7ec' }}>
                 <th className="w-10 px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}></th>
+                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.projectNumber}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.belongProduct}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.name}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.status}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.factory}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.code}</th>
-                <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.projectNumber}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.runnerType}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.supplier}</th>
                 <th className="px-3 py-3 text-left text-xs font-medium" style={{ color: '#6b7c6b' }}>{t.cavities}</th>
@@ -2750,6 +2750,9 @@ function MoldRow({
           </span>
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
+          {mold.projectNumber || '-'}
+        </td>
+        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
           {(() => {
             const product = products.find((p) => p.id === mold.productId);
             return lang === 'en'
@@ -2770,9 +2773,6 @@ function MoldRow({
         </td>
         <td className="px-3 py-3 text-sm font-medium" style={{ color: '#2d3b2d' }}>
           {mold.code}
-        </td>
-        <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
-          {mold.projectNumber || '-'}
         </td>
         <td className="px-3 py-3 text-sm" style={{ color: '#6b7c6b' }}>
           {(RUNNER_NAME_MAP[normalizeRunner(mold.runnerType)] && RUNNER_NAME_MAP[normalizeRunner(mold.runnerType)][lang]) || mold.runnerType || '-'}
@@ -2800,7 +2800,7 @@ function MoldRow({
       {/* Expanded detail */}
       {isExpanded && (
         <tr>
-          <td colSpan={11} className="p-0">
+          <td colSpan={12} className="p-0">
             <div className="px-6 py-5" style={{ backgroundColor: '#f0f7ec' }}>
               {renderPendingBanner}
               <div className="grid grid-cols-2 gap-8">
