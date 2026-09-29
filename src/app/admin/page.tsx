@@ -91,6 +91,13 @@ const translations = {
     importSuccess: 'Backup restored successfully. {n} data groups written. Reloading...',
     importError: 'Invalid backup file. Please check the file format.',
     reloadBtn: 'Reload Now',
+    configBackup: 'Configuration Backup',
+    configBackupDesc: 'Export only the admin configuration (factories, products, runner types, materials, locations, Mold Makers, asset ownership, monthly work days, admin PIN and preferences), without mold inventory or request data. Suitable for syncing configuration between systems or saving as a template.',
+    configExportBtn: 'Export Configuration',
+    configImportBtn: 'Import Configuration',
+    configImportConfirm: 'Importing will OVERWRITE the current admin configuration. Continue?',
+    configImportSuccess: 'Configuration imported. {n} groups written. Reloading...',
+    configImportError: 'Invalid configuration file. Please check the file format.',
   },
   zh: {
     title: '后台管理',
@@ -160,6 +167,13 @@ const translations = {
     importSuccess: '备份恢复成功，共写入 {n} 组数据，即将刷新页面...',
     importError: '备份文件无效，请检查文件格式',
     reloadBtn: '立即刷新',
+    configBackup: '配置备份',
+    configBackupDesc: '仅导出后台配置项（工厂、产品、流道类型、材料、所在地、Mold Maker、资产归属、月工作日、管理员口令及偏好设置），不含模具台账与申请数据。可用于跨系统同步配置或保存为模板。',
+    configExportBtn: '导出配置',
+    configImportBtn: '导入配置',
+    configImportConfirm: '导入配置将覆盖当前全部后台配置，是否继续？',
+    configImportSuccess: '配置导入成功，共写入 {n} 项，即将刷新页面...',
+    configImportError: '配置文件无效，请检查文件格式',
   },
 };
 
@@ -959,9 +973,13 @@ const BACKUP_KEYS = [
   'config_request_retention',
 ] as const;
 
+// 仅后台配置项（工厂/产品/流道/材料/所在地/Mold Maker/资产归属/月工作日/口令/偏好）
+const CONFIG_KEYS = BACKUP_KEYS.filter((k) => k.startsWith('config_'));
+
 function BackupPanel({ lang }: { lang: Lang }) {
   const t = translations[lang];
   const fileRef = useRef<HTMLInputElement>(null);
+  const configFileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<{ key: string; count: number }[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -1006,6 +1024,63 @@ function BackupPanel({ lang }: { lang: Lang }) {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportConfig = () => {
+    const data: Record<string, unknown> = {};
+    for (const key of CONFIG_KEYS) {
+      const raw = window.localStorage.getItem(key);
+      if (raw !== null) data[key] = JSON.parse(raw);
+    }
+    const payload = {
+      app: 'mold-system-config',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    a.href = url;
+    a.download = `mold-config-${ts.getFullYear()}${pad(ts.getMonth() + 1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportConfigFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    if (!window.confirm(t.configImportConfirm)) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result)) as { app?: string; version?: number; data?: Record<string, unknown> };
+        // 兼容两种文件：纯配置备份（mold-system-config）与全量备份（mold-system），只取其中配置项
+        const data = parsed?.data;
+        const valid = data && typeof data === 'object' && data !== null
+          && (parsed.app === 'mold-system-config' || parsed.app === 'mold-system');
+        if (!valid) {
+          setMsg({ ok: false, text: t.configImportError });
+          return;
+        }
+        let count = 0;
+        for (const key of CONFIG_KEYS) {
+          if (key in data) {
+            window.localStorage.setItem(key, JSON.stringify(data[key]));
+            count += 1;
+          }
+        }
+        setMsg({ ok: true, text: t.configImportSuccess.replace('{n}', String(count)) });
+        setStats(BACKUP_KEYS.map((k) => ({ key: k, count: readCount(k) })).filter((s) => s.count > 0));
+        setTimeout(() => window.location.reload(), 1200);
+      } catch {
+        setMsg({ ok: false, text: t.configImportError });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1046,6 +1121,34 @@ function BackupPanel({ lang }: { lang: Lang }) {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
+        <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.configBackup}</h4>
+        <p className="mt-1 text-xs leading-relaxed" style={{ color: '#6b7c6b' }}>{t.configBackupDesc}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExportConfig}
+            className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#4a7c59' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {t.configExportBtn}
+          </button>
+          <button
+            onClick={() => configFileRef.current?.click()}
+            className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-[#f0f7ec]"
+            style={{ borderColor: '#4a7c59', color: '#4a7c59' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            {t.configImportBtn}
+          </button>
+          <input ref={configFileRef} type="file" accept=".json,application/json" className="hidden" onChange={handleImportConfigFile} />
+        </div>
+      </div>
+
       <div className="rounded-xl border px-4 py-4" style={{ borderColor: '#e0e8dc', backgroundColor: '#f8fbf5' }}>
         <h4 className="text-sm font-semibold" style={{ color: '#2d3b2d' }}>{t.backup}</h4>
         <p className="mt-1 text-xs leading-relaxed" style={{ color: '#6b7c6b' }}>{t.backupDesc}</p>
